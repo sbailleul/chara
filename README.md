@@ -1,1 +1,86 @@
 # dependency-visualizer
+
+# Why
+
+Répertorier tous types de dépendances en parcourant des fichiers de configurations.
+
+# Quel type de dépendances
+
+Ci dessous quelques exemples de dépendances, mais il faut garder à l'esprit que ces types sont libres.
+
+Technique :
+
+- Réseau
+- CI
+- Images docker
+- Librairies
+
+Métier
+
+# Modélisation des dépendances
+
+Sous formes d'un graph orienté.
+
+## Les noeuds
+
+Le noeud contient des informations qui lui sont propre par exemple :
+
+- Pour une application, quel est le but de l'app ce quel fait etc ...
+- Pour un noeud réseau quel est son nom de domaine, son ip etc...
+
+lie yaml
+regarde les workflow reutilisables
+utilise l'edge pour récuper les infos dans le repo destination
+
+```json
+{
+  "name": "library",
+  "metadata": {
+    "CI": {
+      "workflows": {
+        "build": {
+          "edges": ["#/CI/workflows"],
+          "file": "./.github/workflows/build-worklow.yaml"
+        },
+        "quality": {
+          "edges": ["#/CI/workflows"],
+          "file": "./.github/workflows/quality-worklow.yaml"
+        }
+      }
+    },
+    "functional": {
+      "purpose": "Sell books to customers"
+    }
+  }
+}
+```
+
+Un noeud contient des metadonnée classées par type dans l'exemple au dessus : CI et Functional.
+
+## Les arcs
+
+Les arcs représentent les connexions entre les noeuds
+
+```json
+{
+  "name": "library",
+  "edges": {
+    "CI": {
+      "workflows": {
+        "definition": "https://github/book-club/workflows/definition.json",
+        "scrapper" : {
+          "id": "#/reusable_workflow" 
+        }
+      }
+    },
+    "functional": {
+      "stock": {
+        ""
+      }
+    }
+  },
+  "scrappers": {
+    "reusable_workflow":{}
+  }
+}
+```
