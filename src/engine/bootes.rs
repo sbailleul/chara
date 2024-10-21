@@ -23,11 +23,17 @@ pub struct Edge {
 }
 
 #[derive(Debug)]
+pub struct Install {
+    pub path: String,
+    pub arguments: Vec<String>,
+}
+
+#[derive(Debug)]
 pub struct Scrapper {
     pub use_context: bool,
     pub arguments: Vec<Readonly<Arguments>>,
     pub path: String,
-    pub install: Option<String>,
+    pub install: Option<Install>,
 }
 
 pub type Environment = HashMap<String, String>;

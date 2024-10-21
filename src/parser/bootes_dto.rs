@@ -4,10 +4,10 @@ use std::{
 };
 
 use serde::Deserialize;
-use serde_json::{de::Read, Map, Value};
+use serde_json::{Map, Value};
 
 use crate::{
-    engine::bootes::{Arguments, Bootes, Edge, Metadata, Scrapper, Tag},
+    engine::bootes::{Bootes, Edge, Install, Metadata, Scrapper, Tag},
     types::thread::{readonly, Readonly},
 };
 #[derive(Debug, Deserialize, Clone)]
@@ -35,7 +35,12 @@ pub struct EdgeDto {
     #[serde(flatten)]
     other: Map<String, Value>,
 }
-
+#[derive(Debug, Deserialize, Clone)]
+struct InstallDto {
+    path: String,
+    #[serde(default)]
+    arguments: Vec<String>,
+}
 #[derive(Debug, Deserialize)]
 struct ScrapperDto {
     #[serde(default)]
@@ -43,7 +48,7 @@ struct ScrapperDto {
     #[serde(default)]
     arguments: Vec<String>,
     path: String,
-    install: Option<String>,
+    install: Option<InstallDto>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -86,8 +91,19 @@ impl BootesDto {
     }
 
     fn set_tags(&self, bootes: &mut Bootes) {
-        let tags = extract_tags(&"#".to_string(), &self.tags);
-        bootes.tags = tags.into_iter().collect();
+        let tags = extract_tags(
+            &readonly(Tag {
+                label: None,
+                tags: HashMap::new(),
+                other: Map::new(),
+            }),
+            &"#".to_string(),
+            &self.tags,
+        );
+        bootes.tags = tags
+            .into_iter()
+            .map(|(_key, path, _parent_tag, tag)| (path, tag))
+            .collect();
     }
 
     fn set_scrappers(&self, bootes: &mut Bootes) {
@@ -101,7 +117,10 @@ impl BootesDto {
                         use_context: scrapper.use_context,
                         arguments: map_scrapper_arguments(scrapper, bootes),
                         path: scrapper.path.clone(),
-                        install: scrapper.install.clone(),
+                        install: scrapper.install.as_ref().map(|install| Install {
+                            arguments: install.arguments.clone(),
+                            path: install.path.clone(),
+                        }),
                     }),
                 )
             })
@@ -146,7 +165,17 @@ impl BootesDto {
                             })
                             .flatten()
                             .collect(),
-                        tags: HashMap::new(),
+                        tags: metadata
+                            .tags
+                            .iter()
+                            .map(|tag| {
+                                bootes
+                                    .tags
+                                    .get(tag)
+                                    .map(|found_tag| (tag.clone(), found_tag.clone()))
+                            })
+                            .flatten()
+                            .collect(),
                         other: metadata.other.clone(),
                     }),
                 )
@@ -172,31 +201,47 @@ fn map_scrapper_arguments(
         .collect()
 }
 fn extract_tags(
+    parent: &Readonly<Tag>,
     parent_path: &String,
     tags: &HashMap<String, TagDto>,
-) -> Vec<(String, Readonly<Tag>)> {
+) -> Vec<(String, String, Readonly<Tag>, Readonly<Tag>)> {
     tags.iter()
-        .map(|(k, tag)| {
+        .map(|(k, tag_dto)| {
             let path = parent_path.to_owned() + "/" + k;
-            if tag.tags.is_empty() {
+            if tag_dto.tags.is_empty() {
                 vec![(
+                    k.clone(),
                     path,
+                    parent.clone(),
                     readonly(Tag {
-                        label: tag.label.clone(),
+                        label: tag_dto.label.clone(),
                         tags: HashMap::new(),
-                        other: tag.other.clone(),
+                        other: tag_dto.other.clone(),
                     }),
                 )]
             } else {
-                extract_tags(&path, &tag.tags)
+                let tag = readonly(Tag {
+                    label: tag_dto.label.clone(),
+                    tags: HashMap::new(),
+                    other: tag_dto.other.clone(),
+                });
+
+                let mut inner_tags = extract_tags(&tag, &path, &tag_dto.tags);
+                if let Ok(mut tag_value) = tag.write() {
+                    tag_value.tags = inner_tags
+                        .iter()
+                        .filter(|(_k, _parent_path, parent_tag, _inner_tag)| {
+                            Arc::ptr_eq(&parent_tag, &tag)
+                        })
+                        .map(|(k, _parent_path, _parent_tag, inner_tag)| {
+                            (k.clone(), inner_tag.clone())
+                        })
+                        .collect()
+                }
+                inner_tags.push((k.clone(), path, parent.clone(), tag));
+                inner_tags
             }
         })
         .flatten()
         .collect()
 }
-pub trait StringExt {
-    fn trim_path(val: &String) -> &str {
-        val.trim_matches('/')
-    }
-}
-impl StringExt for String {}

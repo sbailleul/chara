@@ -3,12 +3,12 @@
   "name": "library",
   "metadatas": {
     "build": {
-      "tags": ["CI/workflows/build"],
+      "tags": ["#/CI/workflows/build"],
       "edges": ["#/workflows"],
       "file": "./.github/workflows/build-worklow.yaml"
     },
     "quality": {
-      "tags": ["CI/workflow/build"],
+      "tags": ["#/CI/workflow/build"],
       "edges": ["#/workflows"],
       "file": "./.github/workflows/quality-worklow.yaml"
     },
@@ -42,6 +42,10 @@
   "scrappers": {
     "reusable_workflow": {
       "path": "github-scrapper",
+      "install": {
+        "path": "echo",
+        "arguments": ["Hello world"]
+      },
       "environments": ["#/github"],
       "arguments": ["#/workflow"]
     }
