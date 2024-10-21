@@ -1,0 +1,52 @@
+{
+  "id": "c7447dd8-2da4-4719-b4c3-4250200c9563",
+  "name": "library",
+  "metadatas": {
+    "build": {
+      "tags": ["CI/workflows/build"],
+      "edges": ["#/workflows"],
+      "file": "./.github/workflows/build-worklow.yaml"
+    },
+    "quality": {
+      "tags": ["CI/workflow/build"],
+      "edges": ["#/workflows"],
+      "file": "./.github/workflows/quality-worklow.yaml"
+    },
+    "functional": {
+      "purpose": "Sell books to customers",
+      "edges": ["#/stock"]
+    }
+  },
+  "edges": {
+    "workflows": {
+      "definition": "https://github/book-club/workflows/bootes.json",
+      "scrapper": "#/reusable_workflow"
+    },
+    "stock": {
+      "definition": "https://github/book-club/stock/bootes.json"
+    }
+  },
+  "tags": {
+    "CI": {
+      "tags": {
+        "workflow": {
+          "tags": {
+            "build": {
+              "label": "It's github stuff"
+            }
+          }
+        }
+      }
+    }
+  },
+  "scrappers": {
+    "reusable_workflow": {
+      "path": "github-scrapper",
+      "environments": ["#/github"],
+      "arguments": ["#/workflow"]
+    }
+  },
+  "arguments": {
+    "workflow": ["-h"]
+  }
+}

@@ -59,7 +59,8 @@ Un noeud contient des metadonnée classées par type dans l'exemple au dessus : 
 
 ## Les arcs
 
-Les arcs représentent les connexions entre les noeuds
+Les arcs représentent les connexions de dépendance entre les noeuds,
+Le contexte actuel dépend toujours de la définition de l'edge...
 
 ```json
 {
@@ -67,20 +68,27 @@ Les arcs représentent les connexions entre les noeuds
   "edges": {
     "CI": {
       "workflows": {
-        "definition": "https://github/book-club/workflows/definition.json",
-        "scrapper" : {
-          "id": "#/reusable_workflow" 
-        }
+        "definition": "https://github/book-club/workflows/bootes.json",
+        "scrapper": "#/reusable_workflow"
       }
     },
     "functional": {
-      "stock": {
-        ""
-      }
+      "stock": {}
     }
   },
   "scrappers": {
-    "reusable_workflow":{}
+    "reusable_workflow": {
+      "environments": ["#/github"],
+      "arguments": ["#/workflow"]
+    }
+  },
+  "environments": {
+    "github": {
+      "TOKEN": "TEST"
+    }
+  },
+  "arguments": {
+    "workflow": ["-h"]
   }
 }
 ```
