@@ -18,7 +18,7 @@ pub struct Metadata {
 #[derive(Debug)]
 pub struct Edge {
     pub definition: Option<String>,
-    pub scrapper: Option<Readonly<Scrapper>>,
+    pub enricher: Option<Readonly<Enricher>>,
     pub other: Map<String, Value>,
 }
 
@@ -27,23 +27,28 @@ pub struct Install {
     pub path: String,
     pub arguments: Vec<String>,
 }
-
 #[derive(Debug)]
-pub struct Scrapper {
-    pub use_context: bool,
-    pub arguments: Vec<Readonly<Arguments>>,
-    pub path: String,
-    pub install: Option<Install>,
+pub enum Argument {
+    Value(String),
+    Reference(Readonly<Vec<String>>),
 }
 
-pub type Environment = HashMap<String, String>;
-pub type Arguments = Vec<String>;
+#[derive(Debug)]
+pub struct Enricher {
+    pub use_context: bool,
+    pub arguments: Vec<Argument>,
+    pub path: String,
+    pub install: Option<Install>,
+    pub environments: Vec<Readonly<HashMap<String, String>>>,
+}
+
 #[derive(Debug)]
 pub struct Bootes {
     pub name: String,
-    pub metadatas: HashMap<String, Readonly<Metadata>>,
+    pub metadata: HashMap<String, Readonly<Metadata>>,
     pub edges: HashMap<String, Readonly<Edge>>,
     pub tags: HashMap<String, Readonly<Tag>>,
-    pub scrappers: HashMap<String, Readonly<Scrapper>>,
-    pub arguments: HashMap<String, Readonly<Arguments>>,
+    pub enrichers: HashMap<String, Readonly<Enricher>>,
+    pub arguments: HashMap<String, Readonly<Vec<String>>>,
+    pub environments: HashMap<String, Readonly<HashMap<String, String>>>,
 }

@@ -69,14 +69,14 @@ Le contexte actuel dépend toujours de la définition de l'edge...
     "CI": {
       "workflows": {
         "definition": "https://github/book-club/workflows/bootes.json",
-        "scrapper": "#/reusable_workflow"
+        "enricher": "#/reusable_workflow"
       }
     },
     "functional": {
       "stock": {}
     }
   },
-  "scrappers": {
+  "enrichers": {
     "reusable_workflow": {
       "environments": ["#/github"],
       "arguments": ["#/workflow"]

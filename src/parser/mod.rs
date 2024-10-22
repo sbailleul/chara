@@ -16,5 +16,6 @@ pub fn parse(definition: &Definition) -> Bootes {
         Definition::Json(content) => serde_json::from_str(&content),
     };
     let bootes: BootesDto = result.expect(format!("Format {:?} isn't valid", definition).as_str());
+    dbg!(&bootes);
     bootes.map()
 }

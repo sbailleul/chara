@@ -1,16 +1,16 @@
 {
   "id": "c7447dd8-2da4-4719-b4c3-4250200c9563",
   "name": "library",
-  "metadatas": {
+  "metadata": {
     "build": {
       "tags": ["#/CI/workflows/build"],
       "edges": ["#/workflows"],
-      "file": "./.github/workflows/build-worklow.yaml"
+      "file": "./.github/workflows/build-workflow.yaml"
     },
     "quality": {
       "tags": ["#/CI/workflow/build"],
       "edges": ["#/workflows"],
-      "file": "./.github/workflows/quality-worklow.yaml"
+      "file": "./.github/workflows/quality-workflow.yaml"
     },
     "functional": {
       "purpose": "Sell books to customers",
@@ -20,7 +20,7 @@
   "edges": {
     "workflows": {
       "definition": "https://github/book-club/workflows/bootes.json",
-      "scrapper": "#/reusable_workflow"
+      "enricher": "#/reusable_workflow"
     },
     "stock": {
       "definition": "https://github/book-club/stock/bootes.json"
@@ -39,14 +39,14 @@
       }
     }
   },
-  "scrappers": {
+  "enrichers": {
     "reusable_workflow": {
-      "path": "github-scrapper",
+      "path": "github-enricher",
       "install": {
         "path": "echo",
         "arguments": ["Hello world"]
       },
-      "environments": ["#/github"],
+      "environments": ["#/github", { "HTTP_PROXY": "localhost:6018" }],
       "arguments": ["#/workflow"]
     }
   },

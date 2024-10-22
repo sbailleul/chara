@@ -4,7 +4,7 @@ use std::{
 };
 
 use bootes::{Bootes, Metadata};
-use contexts::{EdgeContext, ScrapperContext};
+use contexts::{EdgeContext, EnricherContext};
 
 use crate::types::thread::Readonly;
 
@@ -13,7 +13,7 @@ pub mod contexts;
 
 pub fn run(bootes: Bootes) {
     bootes
-        .metadatas
+        .metadata
         .into_iter()
         .map(|metadata| handle_metadata(metadata))
         .for_each(|handle| {
@@ -39,20 +39,20 @@ fn handle_metadata(metadata: (String, Readonly<Metadata>)) -> JoinHandle<()> {
 fn handle_edge(context: EdgeContext) -> JoinHandle<()> {
     thread::spawn(move || {
         if let Ok(edge_lock) = context.edge.1.read() {
-            if let Some(scrapper) = edge_lock.scrapper.clone() {
-                handle_scrapper(ScrapperContext {
+            if let Some(enricher) = edge_lock.enricher.clone() {
+                handle_enricher(EnricherContext {
                     edge: context.edge.clone(),
                     metadata: context.metadata.clone(),
-                    scrapper,
+                    enricher,
                 })
             }
         }
     })
 }
 
-fn handle_scrapper(context: ScrapperContext) {
-    if let Ok(scrapper_lock) = context.scrapper.read() {
-        if let Some(install) = &scrapper_lock.install {
+fn handle_enricher(context: EnricherContext) {
+    if let Ok(enricher_lock) = context.enricher.read() {
+        if let Some(install) = &enricher_lock.install {
             match Command::new(&install.path)
                 .args(&install.arguments)
                 .output()

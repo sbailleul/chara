@@ -1,13 +1,10 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-};
+use std::{collections::HashMap, sync::Arc};
 
 use serde::Deserialize;
 use serde_json::{Map, Value};
 
 use crate::{
-    engine::bootes::{Bootes, Edge, Install, Metadata, Scrapper, Tag},
+    engine::bootes::{Argument, Bootes, Edge, Enricher, Install, Metadata, Tag},
     types::thread::{readonly, Readonly},
 };
 #[derive(Debug, Deserialize, Clone)]
@@ -31,7 +28,7 @@ pub struct MetadataDto {
 #[derive(Debug, Deserialize)]
 pub struct EdgeDto {
     definition: Option<String>,
-    scrapper: Option<String>,
+    enricher: Option<String>,
     #[serde(flatten)]
     other: Map<String, Value>,
 }
@@ -42,11 +39,20 @@ struct InstallDto {
     arguments: Vec<String>,
 }
 #[derive(Debug, Deserialize)]
-struct ScrapperDto {
+#[serde(untagged)]
+enum EnvironmentDto {
+    Reference(String),
+    Value(HashMap<String, String>),
+}
+
+#[derive(Debug, Deserialize)]
+struct EnricherDto {
     #[serde(default)]
     use_context: bool,
     #[serde(default)]
     arguments: Vec<String>,
+    #[serde(default)]
+    environments: Vec<EnvironmentDto>,
     path: String,
     install: Option<InstallDto>,
 }
@@ -55,15 +61,17 @@ struct ScrapperDto {
 pub struct BootesDto {
     name: String,
     #[serde(default)]
-    metadatas: HashMap<String, MetadataDto>,
+    metadata: HashMap<String, MetadataDto>,
     #[serde(default)]
     edges: HashMap<String, EdgeDto>,
     #[serde(default)]
     tags: HashMap<String, TagDto>,
     #[serde(default)]
-    scrappers: HashMap<String, ScrapperDto>,
+    enrichers: HashMap<String, EnricherDto>,
     #[serde(default)]
     arguments: HashMap<String, Vec<String>>,
+    #[serde(default)]
+    environments: HashMap<String, HashMap<String, String>>,
 }
 
 impl BootesDto {
@@ -73,20 +81,26 @@ impl BootesDto {
             .map(|(key, value)| (key.clone(), readonly(value.clone())))
             .collect()
     }
+    fn environments(&self) -> HashMap<String, Readonly<HashMap<String, String>>> {
+        self.environments
+            .iter()
+            .map(|(key, value)| (key.clone(), readonly(value.clone())))
+            .collect()
+    }
     pub fn map(self) -> Bootes {
-        let arguments = self.arguments();
         let mut bootes = Bootes {
             name: self.name.clone(),
-            arguments,
+            arguments: self.arguments(),
+            environments: self.environments(),
             edges: HashMap::new(),
-            metadatas: HashMap::new(),
-            scrappers: HashMap::new(),
+            metadata: HashMap::new(),
+            enrichers: HashMap::new(),
             tags: HashMap::new(),
         };
-        self.set_scrappers(&mut bootes);
+        self.set_enrichers(&mut bootes);
         self.set_edges(&mut bootes);
         self.set_tags(&mut bootes);
-        self.set_metadatas(&mut bootes);
+        self.set_metadata(&mut bootes);
         bootes
     }
 
@@ -106,21 +120,22 @@ impl BootesDto {
             .collect();
     }
 
-    fn set_scrappers(&self, bootes: &mut Bootes) {
-        bootes.scrappers = self
-            .scrappers
+    fn set_enrichers(&self, bootes: &mut Bootes) {
+        bootes.enrichers = self
+            .enrichers
             .iter()
-            .map(|(key, scrapper)| {
+            .map(|(key, enricher)| {
                 (
                     key.clone(),
-                    readonly(Scrapper {
-                        use_context: scrapper.use_context,
-                        arguments: map_scrapper_arguments(scrapper, bootes),
-                        path: scrapper.path.clone(),
-                        install: scrapper.install.as_ref().map(|install| Install {
+                    readonly(Enricher {
+                        use_context: enricher.use_context,
+                        arguments: map_enricher_arguments(enricher, bootes),
+                        path: enricher.path.clone(),
+                        install: enricher.install.as_ref().map(|install| Install {
                             arguments: install.arguments.clone(),
                             path: install.path.clone(),
                         }),
+                        environments: map_enricher_environments(enricher, bootes),
                     }),
                 )
             })
@@ -136,8 +151,8 @@ impl BootesDto {
                     key.clone(),
                     readonly(Edge {
                         definition: edge.definition.clone(),
-                        scrapper: edge.scrapper.as_ref().and_then(|path| {
-                            bootes.scrappers.get(path.trim_start_matches("#/")).cloned()
+                        enricher: edge.enricher.as_ref().and_then(|path| {
+                            bootes.enrichers.get(path.trim_start_matches("#/")).cloned()
                         }),
                         other: edge.other.clone(),
                     }),
@@ -145,9 +160,9 @@ impl BootesDto {
             })
             .collect()
     }
-    fn set_metadatas(&self, bootes: &mut Bootes) {
-        bootes.metadatas = self
-            .metadatas
+    fn set_metadata(&self, bootes: &mut Bootes) {
+        bootes.metadata = self
+            .metadata
             .iter()
             .map(|(key, metadata)| {
                 (
@@ -184,18 +199,37 @@ impl BootesDto {
     }
 }
 
-fn map_scrapper_arguments(
-    scrapper: &ScrapperDto,
-    bootes: &Bootes,
-) -> Vec<Arc<RwLock<Vec<String>>>> {
-    scrapper
+fn map_enricher_arguments(enricher: &EnricherDto, bootes: &Bootes) -> Vec<Argument> {
+    enricher
         .arguments
         .iter()
         .map(|path| {
-            bootes
-                .arguments
+            if path.starts_with("#/") {
+                bootes
+                    .arguments
+                    .get(path.trim_start_matches("#/"))
+                    .map(|v| v.clone())
+                    .map(|reference| Argument::Reference(reference))
+            } else {
+                Some(Argument::Value(path.clone()))
+            }
+        })
+        .flatten()
+        .collect()
+}
+fn map_enricher_environments(
+    enricher: &EnricherDto,
+    bootes: &Bootes,
+) -> Vec<Readonly<HashMap<String, String>>> {
+    enricher
+        .environments
+        .iter()
+        .map(|environment| match environment {
+            EnvironmentDto::Reference(path) => bootes
+                .environments
                 .get(path.trim_start_matches("#/"))
-                .map(|v| v.clone())
+                .map(|v| v.clone()),
+            EnvironmentDto::Value(hash_map) => Some(readonly(hash_map.clone())),
         })
         .flatten()
         .collect()
