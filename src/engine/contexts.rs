@@ -7,7 +7,7 @@ pub struct EdgeContext {
     pub edge: (String, Readonly<Edge>),
 }
 #[derive(Debug)]
-pub struct EnricherContext {
+pub struct EdgeEnricherContext {
     pub metadata: (String, Readonly<Metadata>),
     pub edge: (String, Readonly<Edge>),
     pub enricher: Readonly<Enricher>,

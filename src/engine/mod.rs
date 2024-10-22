@@ -1,18 +1,16 @@
-use std::{
-    collections::HashMap,
-    process::Command,
-    thread::{self, JoinHandle},
-};
+use std::thread::{self, JoinHandle};
 
 use bootes::{Bootes, Metadata};
-use contexts::{EdgeContext, EnricherContext};
+use cli::Cli;
+use contexts::{EdgeContext, EdgeEnricherContext};
+use contexts_dto::EdgeEnricherContextDto;
 
 use crate::types::thread::Readonly;
 
 pub mod bootes;
 pub mod cli;
 mod contexts;
-
+mod contexts_dto;
 pub fn run(bootes: Bootes) {
     bootes
         .metadata
@@ -42,7 +40,7 @@ fn handle_edge(context: EdgeContext) -> JoinHandle<()> {
     thread::spawn(move || {
         if let Ok(edge_lock) = context.edge.1.read() {
             if let Some(enricher) = edge_lock.enricher.clone() {
-                handle_enricher(EnricherContext {
+                handle_enricher(EdgeEnricherContext {
                     edge: context.edge.clone(),
                     metadata: context.metadata.clone(),
                     enricher,
@@ -52,11 +50,10 @@ fn handle_edge(context: EdgeContext) -> JoinHandle<()> {
     })
 }
 
-fn handle_enricher(context: EnricherContext) {
-    if let Ok(enricher_lock) = context.enricher.read() {
-        if let Some(install) = &enricher_lock.install {
-            let test = HashMap::<String, String>::new();
-            match Command::new(&install.program).envs(test).output() {
+fn handle_enricher(context: EdgeEnricherContext) {
+    if let Ok(enricher) = context.enricher.read() {
+        if let Some(install) = &enricher.install {
+            match install.command().output() {
                 Ok(output) => {
                     if let Ok(stdout) = String::from_utf8(output.stdout) {
                         print!("{stdout}");
@@ -64,6 +61,15 @@ fn handle_enricher(context: EnricherContext) {
                 }
                 Err(_) => todo!(),
             }
+        }
+        if let Some(serialized_context) =
+            EdgeEnricherContextDto::from(&context).and_then(|context| context.serialize().ok())
+        {
+            let _ = enricher
+                .command()
+                .args(vec!["--context".to_string(), serialized_context])
+                .output()
+                .inspect_err(|err| print!("{err}"));
         }
     }
 }

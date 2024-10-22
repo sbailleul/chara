@@ -5,7 +5,8 @@
     "build": {
       "tags": ["#/CI/workflows/build"],
       "edges": ["#/workflows"],
-      "file": "./.github/workflows/build-workflow.yaml"
+      "file": "./.github/workflows/build-workflow.yaml",
+      "enricher": "#/reusable_workflow"
     },
     "quality": {
       "tags": ["#/CI/workflow/build"],

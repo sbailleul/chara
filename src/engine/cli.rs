@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
-    io,
-    process::{Command, Output},
+    process::Command,
 };
 
 use crate::types::thread::Readonly;
@@ -10,11 +9,11 @@ pub trait Cli {
     fn arguments(&self) -> Vec<Argument>;
     fn environments(&self) -> Vec<Environment>;
     fn program(&self) -> String;
-    fn output(&self) -> io::Result<Output> {
-        Command::new(self.program())
-            .args(self.flatten_arguments())
-            .envs(self.flatten_environments())
-            .output()
+    fn command(&self) -> Command {
+        let mut cmd = Command::new(self.program());
+        cmd.args(self.flatten_arguments())
+            .envs(self.flatten_environments());
+        cmd
     }
 
     fn flatten_arguments(&self) -> Vec<String> {
