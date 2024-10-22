@@ -5,6 +5,7 @@ use bootes_dto::BootesDto;
 use crate::{engine::bootes::Bootes, types::input::Definition};
 
 mod bootes_dto;
+mod map;
 
 pub fn parse(definition: &Definition) -> Bootes {
     let result = match definition {

@@ -41,9 +41,9 @@
   },
   "enrichers": {
     "reusable_workflow": {
-      "path": "github-enricher",
+      "program": "github-enricher",
       "install": {
-        "path": "echo",
+        "program": "echo",
         "arguments": ["Hello world"]
       },
       "environments": ["#/github", { "HTTP_PROXY": "localhost:6018" }],

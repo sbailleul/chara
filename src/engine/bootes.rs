@@ -2,6 +2,8 @@ use crate::types::thread::Readonly;
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
+use super::cli::{Argument, Cli, Environment};
+
 #[derive(Debug)]
 pub struct Tag {
     pub label: Option<String>,
@@ -13,6 +15,7 @@ pub struct Metadata {
     pub edges: HashMap<String, Readonly<Edge>>,
     pub tags: HashMap<String, Readonly<Tag>>,
     pub other: Map<String, Value>,
+    pub enricher: Option<Readonly<Enricher>>,
 }
 
 #[derive(Debug)]
@@ -24,22 +27,40 @@ pub struct Edge {
 
 #[derive(Debug)]
 pub struct Install {
-    pub path: String,
-    pub arguments: Vec<String>,
+    pub arguments: Vec<Argument>,
+    pub program: String,
+    pub environments: Vec<Environment>,
 }
-#[derive(Debug)]
-pub enum Argument {
-    Value(String),
-    Reference(Readonly<Vec<String>>),
+
+impl Cli for Install {
+    fn arguments(&self) -> Vec<Argument> {
+        self.arguments.clone()
+    }
+    fn environments(&self) -> Vec<Environment> {
+        self.environments.clone()
+    }
+    fn program(&self) -> String {
+        self.program.clone()
+    }
 }
 
 #[derive(Debug)]
 pub struct Enricher {
-    pub use_context: bool,
     pub arguments: Vec<Argument>,
-    pub path: String,
+    pub program: String,
     pub install: Option<Install>,
-    pub environments: Vec<Readonly<HashMap<String, String>>>,
+    pub environments: Vec<Environment>,
+}
+impl Cli for Enricher {
+    fn arguments(&self) -> Vec<Argument> {
+        self.arguments.clone()
+    }
+    fn environments(&self) -> Vec<Environment> {
+        self.environments.clone()
+    }
+    fn program(&self) -> String {
+        self.program.clone()
+    }
 }
 
 #[derive(Debug)]

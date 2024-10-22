@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     process::Command,
     thread::{self, JoinHandle},
 };
@@ -9,7 +10,8 @@ use contexts::{EdgeContext, EnricherContext};
 use crate::types::thread::Readonly;
 
 pub mod bootes;
-pub mod contexts;
+pub mod cli;
+mod contexts;
 
 pub fn run(bootes: Bootes) {
     bootes
@@ -53,10 +55,8 @@ fn handle_edge(context: EdgeContext) -> JoinHandle<()> {
 fn handle_enricher(context: EnricherContext) {
     if let Ok(enricher_lock) = context.enricher.read() {
         if let Some(install) = &enricher_lock.install {
-            match Command::new(&install.path)
-                .args(&install.arguments)
-                .output()
-            {
+            let test = HashMap::<String, String>::new();
+            match Command::new(&install.program).envs(test).output() {
                 Ok(output) => {
                     if let Ok(stdout) = String::from_utf8(output.stdout) {
                         print!("{stdout}");
