@@ -91,11 +91,11 @@ impl Bootes {
     fn enrichers_contexts(&self) -> Vec<EnricherContext> {
         self.metadata
             .iter()
-            .map(|(metadata_key, metadata_value)| {
+            .flat_map(|(metadata_key, metadata_value)| {
                 metadata_value.read().ok().map(|metadata_lock| {
                     let edge_contexts = metadata_lock.edges.iter().map(|(edge_key, edge_value)| {
                         edge_value.read().ok().and_then(|edge_lock| {
-                            if let Some(enricher) = edge_lock.enricher {
+                            if let Some(enricher) = edge_lock.enricher.as_ref() {
                                 Some(EdgeContext {
                                     key: edge_key.clone(),
                                     value: edge_lock.other.clone(),
@@ -106,23 +106,43 @@ impl Bootes {
                             }
                         })
                     });
-                    edge_contexts.map(|edge_context| {
-                        if let Some(enricher) = metadata_lock.enricher {
-                            if Arc::ptr_eq(&enricher, &edge_context.enricher) {
-                                Some(EnricherContext {
-                                    bootes: BootContextDto {
-                                        edge: Some((edge_context.key, edge_context.value)),
-                                        metadata: (
-                                            metadata_key.clone(),
-                                            metadata_lock.other.clone(),
-                                        ),
-                                        write: WritePermissionsDto {
-                                            edge: true,
-                                            metadata: true,
+                    edge_contexts.flat_map(|edge_context| {
+                        if let Some(edge_context) = edge_context {
+                            if let Some(enricher) = metadata_lock.enricher.as_ref() {
+                                if Arc::ptr_eq(&enricher, &edge_context.enricher) {
+                                    Some(EnricherContext {
+                                        bootes: BootContextDto {
+                                            edge: Some((edge_context.key, edge_context.value)),
+                                            metadata: (
+                                                metadata_key.clone(),
+                                                metadata_lock.other.clone(),
+                                            ),
+                                            write: WritePermissionsDto {
+                                                edge: true,
+                                                metadata: true,
+                                            },
                                         },
-                                    },
-                                    enricher: enricher.clone(),
-                                })
+                                        enricher: enricher.clone(),
+                                    })
+                                } else {
+                                    Some(EnricherContext {
+                                        bootes: BootContextDto {
+                                            metadata: (
+                                                metadata_key.clone(),
+                                                metadata_lock.other.clone(),
+                                            ),
+                                            write: WritePermissionsDto {
+                                                edge: true,
+                                                metadata: false,
+                                            },
+                                            edge: Some((
+                                                edge_context.key.clone(),
+                                                edge_context.value.clone(),
+                                            )),
+                                        },
+                                        enricher: edge_context.enricher.clone(),
+                                    })
+                                }
                             } else {
                                 Some(EnricherContext {
                                     bootes: BootContextDto {
@@ -131,16 +151,36 @@ impl Bootes {
                                             metadata_lock.other.clone(),
                                         ),
                                         write: WritePermissionsDto {
-                                            edge: false,
-                                            metadata: true,
+                                            edge: true,
+                                            metadata: false,
                                         },
-                                        edge: None,
+                                        edge: Some((
+                                            edge_context.key.clone(),
+                                            edge_context.value.clone(),
+                                        )),
                                     },
-                                    enricher: enricher.clone(),
+                                    enricher: edge_context.enricher.clone(),
                                 })
                             }
                         } else {
-                            None
+                            if let Some(enricher) = metadata_lock.enricher {
+                                Some(EnricherContext {
+                                    bootes: BootContextDto {
+                                        edge: None,
+                                        metadata: (
+                                            metadata_key.clone(),
+                                            metadata_lock.other.clone(),
+                                        ),
+                                        write: WritePermissionsDto {
+                                            edge: false,
+                                            metadata: true,
+                                        },
+                                    },
+                                    enricher: enricher.clone(),
+                                })
+                            } else {
+                                None
+                            }
                         }
                     })
                 })
