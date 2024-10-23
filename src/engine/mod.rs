@@ -62,8 +62,8 @@ fn handle_enricher(context: EdgeEnricherContext) {
                 Err(_) => todo!(),
             }
         }
-        if let Some(serialized_context) =
-            EdgeEnricherContextDto::from(&context).and_then(|context| context.serialize().ok())
+        if let Some(serialized_context) = EdgeEnricherContextDto::from(&context)
+            .and_then(|context| serde_json::to_string(&context).ok())
         {
             let _ = enricher
                 .command()

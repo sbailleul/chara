@@ -1,7 +1,6 @@
 use serde::Serialize;
 use serde_json::{Map, Value};
 
-
 use super::contexts::EdgeEnricherContext;
 
 #[derive(Debug, Serialize)]
@@ -27,7 +26,14 @@ impl EdgeEnricherContextDto {
             None
         }
     }
-    pub fn serialize(&self) -> serde_json::Result<String> {
-        serde_json::to_string(self)
-    }
+}
+
+pub struct WritePermissionsDto {
+    pub metadata: bool,
+    pub edge: bool,
+}
+pub struct BootContextDto {
+    pub write: WritePermissionsDto,
+    pub metadata: (String, Map<String, Value>),
+    pub edge: Option<(String, Map<String, Value>)>,
 }
