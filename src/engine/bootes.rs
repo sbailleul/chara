@@ -1,6 +1,10 @@
 use crate::{engine::contexts_dto::WritePermissionsDto, types::thread::Readonly};
 use serde_json::{de::Read, Map, Value};
-use std::{collections::HashMap, sync::Arc, vec};
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+    vec,
+};
 
 use super::{
     cli::{Argument, Cli, Environment},
@@ -89,26 +93,30 @@ struct EdgeContext {
 
 impl Bootes {
     fn enrichers_contexts(&self) -> Vec<EnricherContext> {
-        self.metadata
-            .iter()
-            .flat_map(|(metadata_key, metadata_value)| {
-                metadata_value.read().ok().map(|metadata_lock| {
-                    let edge_contexts = metadata_lock.edges.iter().map(|(edge_key, edge_value)| {
-                        edge_value.read().ok().and_then(|edge_lock| {
-                            if let Some(enricher) = edge_lock.enricher.as_ref() {
-                                Some(EdgeContext {
-                                    key: edge_key.clone(),
-                                    value: edge_lock.other.clone(),
-                                    enricher: enricher.clone(),
-                                })
-                            } else {
-                                None
-                            }
-                        })
-                    });
-                    edge_contexts.flat_map(|edge_context| {
+        let bootes_contexts = self.metadata.iter().map(|(metadata_key, metadata_value)| {
+            metadata_value.read().ok().map(|metadata_lock| {
+                let edge_contexts =
+                    metadata_lock
+                        .edges
+                        .clone()
+                        .into_iter()
+                        .map(|(edge_key, edge_value)| {
+                            edge_value.to_owned().read().ok().and_then(|edge_lock| {
+                                if let Some(enricher) = edge_lock.enricher.clone() {
+                                    Some(EdgeContext {
+                                        key: edge_key.clone(),
+                                        value: edge_lock.other.clone(),
+                                        enricher: enricher.clone(),
+                                    })
+                                } else {
+                                    None
+                                }
+                            })
+                        });
+                edge_contexts
+                    .map(move |edge_context| {
                         if let Some(edge_context) = edge_context {
-                            if let Some(enricher) = metadata_lock.enricher.as_ref() {
+                            if let Some(enricher) = metadata_lock.enricher.clone() {
                                 if Arc::ptr_eq(&enricher, &edge_context.enricher) {
                                     Some(EnricherContext {
                                         bootes: BootContextDto {
@@ -163,7 +171,7 @@ impl Bootes {
                                 })
                             }
                         } else {
-                            if let Some(enricher) = metadata_lock.enricher {
+                            if let Some(enricher) = metadata_lock.enricher.clone() {
                                 Some(EnricherContext {
                                     bootes: BootContextDto {
                                         edge: None,
@@ -183,9 +191,9 @@ impl Bootes {
                             }
                         }
                     })
-                })
+                    .flatten()
             })
-            .flatten()
-            .collect()
+        });
+        bootes_contexts.flatten().flatten().collect()
     }
 }
