@@ -1,9 +1,8 @@
 use crate::{engine::contexts_dto::WritePermissionsDto, types::thread::Readonly};
-use serde_json::{de::Read, Map, Value};
+use serde_json::{Map, Value};
 use std::{
     collections::HashMap,
-    sync::{Arc, RwLock},
-    vec,
+    sync::Arc,
 };
 
 use super::{
@@ -81,9 +80,9 @@ pub struct Bootes {
     pub environments: HashMap<String, Readonly<HashMap<String, String>>>,
 }
 
-struct EnricherContext {
-    bootes: BootContextDto,
-    enricher: Readonly<Enricher>,
+pub struct EnricherContext {
+    pub bootes: BootContextDto,
+    pub enricher: Readonly<Enricher>,
 }
 struct EdgeContext {
     key: String,
@@ -92,106 +91,84 @@ struct EdgeContext {
 }
 
 impl Bootes {
-    fn enrichers_contexts(&self) -> Vec<EnricherContext> {
+    pub fn enrichers_contexts(&self) -> Vec<EnricherContext> {
         let bootes_contexts = self.metadata.iter().map(|(metadata_key, metadata_value)| {
             metadata_value.read().ok().map(|metadata_lock| {
-                let edge_contexts =
-                    metadata_lock
-                        .edges
-                        .clone()
-                        .into_iter()
-                        .map(|(edge_key, edge_value)| {
-                            edge_value.to_owned().read().ok().and_then(|edge_lock| {
-                                if let Some(enricher) = edge_lock.enricher.clone() {
-                                    Some(EdgeContext {
-                                        key: edge_key.clone(),
-                                        value: edge_lock.other.clone(),
-                                        enricher: enricher.clone(),
-                                    })
-                                } else {
-                                    None
-                                }
-                            })
-                        });
-                edge_contexts
-                    .map(move |edge_context| {
-                        if let Some(edge_context) = edge_context {
-                            if let Some(enricher) = metadata_lock.enricher.clone() {
-                                if Arc::ptr_eq(&enricher, &edge_context.enricher) {
-                                    Some(EnricherContext {
-                                        bootes: BootContextDto {
-                                            edge: Some((edge_context.key, edge_context.value)),
-                                            metadata: (
-                                                metadata_key.clone(),
-                                                metadata_lock.other.clone(),
-                                            ),
-                                            write: WritePermissionsDto {
-                                                edge: true,
-                                                metadata: true,
-                                            },
-                                        },
-                                        enricher: enricher.clone(),
-                                    })
-                                } else {
-                                    Some(EnricherContext {
-                                        bootes: BootContextDto {
-                                            metadata: (
-                                                metadata_key.clone(),
-                                                metadata_lock.other.clone(),
-                                            ),
-                                            write: WritePermissionsDto {
-                                                edge: true,
-                                                metadata: false,
-                                            },
-                                            edge: Some((
-                                                edge_context.key.clone(),
-                                                edge_context.value.clone(),
-                                            )),
-                                        },
-                                        enricher: edge_context.enricher.clone(),
-                                    })
-                                }
+                let edge_contexts = metadata_lock
+                    .edges
+                    .clone()
+                    .into_iter()
+                    .map(|(edge_key, edge_value)| {
+                        edge_value.read().ok().and_then(|edge_lock| {
+                            if let Some(enricher) = edge_lock.enricher.clone() {
+                                Some(EdgeContext {
+                                    key: edge_key.clone(),
+                                    value: edge_lock.other.clone(),
+                                    enricher: enricher.clone(),
+                                })
                             } else {
+                                None
+                            }
+                        })
+                    })
+                    .flatten();
+                let mut enricher_contexts = edge_contexts
+                    .map(|edge_context| {
+                        let context_without_metadata = Some(EnricherContext {
+                            bootes: BootContextDto {
+                                metadata: (metadata_key.clone(), metadata_lock.other.clone()),
+                                write: WritePermissionsDto {
+                                    edge: true,
+                                    metadata: false,
+                                },
+                                edge: Some((edge_context.key.clone(), edge_context.value.clone())),
+                            },
+                            enricher: edge_context.enricher.clone(),
+                        });
+                        if let Some(enricher) = metadata_lock.enricher.clone() {
+                            if Arc::ptr_eq(&enricher, &edge_context.enricher) {
                                 Some(EnricherContext {
                                     bootes: BootContextDto {
+                                        edge: Some((edge_context.key, edge_context.value)),
                                         metadata: (
                                             metadata_key.clone(),
                                             metadata_lock.other.clone(),
                                         ),
                                         write: WritePermissionsDto {
                                             edge: true,
-                                            metadata: false,
-                                        },
-                                        edge: Some((
-                                            edge_context.key.clone(),
-                                            edge_context.value.clone(),
-                                        )),
-                                    },
-                                    enricher: edge_context.enricher.clone(),
-                                })
-                            }
-                        } else {
-                            if let Some(enricher) = metadata_lock.enricher.clone() {
-                                Some(EnricherContext {
-                                    bootes: BootContextDto {
-                                        edge: None,
-                                        metadata: (
-                                            metadata_key.clone(),
-                                            metadata_lock.other.clone(),
-                                        ),
-                                        write: WritePermissionsDto {
-                                            edge: false,
                                             metadata: true,
                                         },
                                     },
                                     enricher: enricher.clone(),
                                 })
                             } else {
-                                None
+                                context_without_metadata
                             }
+                        } else {
+                            context_without_metadata
                         }
                     })
                     .flatten()
+                    .collect::<Vec<EnricherContext>>();
+                if enricher_contexts
+                    .iter()
+                    .all(|context| context.bootes.write.metadata == false)
+                {
+                    if let Some(enricher) = metadata_lock.enricher.clone() {
+                        enricher_contexts.push(EnricherContext {
+                            bootes: BootContextDto {
+                                edge: None,
+                                metadata: (metadata_key.clone(), metadata_lock.other.clone()),
+                                write: WritePermissionsDto {
+                                    edge: false,
+                                    metadata: true,
+                                },
+                            },
+                            enricher: enricher.clone(),
+                        });
+                    }
+                }
+                enricher_contexts
             })
         });
         bootes_contexts.flatten().flatten().collect()
