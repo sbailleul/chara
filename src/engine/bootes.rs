@@ -1,9 +1,6 @@
 use crate::{engine::contexts_dto::WritePermissionsDto, types::thread::Readonly};
 use serde_json::{Map, Value};
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use super::{
     cli::{Argument, Cli, Environment},
@@ -100,47 +97,37 @@ impl Bootes {
                     .into_iter()
                     .map(|(edge_key, edge_value)| {
                         edge_value.read().ok().and_then(|edge_lock| {
-                            if let Some(enricher) = edge_lock.enricher.clone() {
-                                Some(EdgeContext {
-                                    key: edge_key.clone(),
-                                    value: edge_lock.other.clone(),
-                                    enricher: enricher.clone(),
-                                })
-                            } else {
-                                None
-                            }
+                            edge_lock.enricher.clone().map(|enricher| EdgeContext {
+                                key: edge_key.clone(),
+                                value: edge_lock.other.clone(),
+                                enricher: enricher.clone(),
+                            })
                         })
                     })
                     .flatten();
                 let mut enricher_contexts = edge_contexts
                     .map(|edge_context| {
-                        let context_without_metadata = Some(EnricherContext {
+                        let context_without_metadata = EnricherContext {
                             bootes: BootContextDto {
                                 metadata: (metadata_key.clone(), metadata_lock.other.clone()),
-                                write: WritePermissionsDto {
-                                    edge: true,
-                                    metadata: false,
-                                },
+                                write: WritePermissionsDto::edge(),
                                 edge: Some((edge_context.key.clone(), edge_context.value.clone())),
                             },
                             enricher: edge_context.enricher.clone(),
-                        });
+                        };
                         if let Some(enricher) = metadata_lock.enricher.clone() {
                             if Arc::ptr_eq(&enricher, &edge_context.enricher) {
-                                Some(EnricherContext {
+                                EnricherContext {
                                     bootes: BootContextDto {
                                         edge: Some((edge_context.key, edge_context.value)),
                                         metadata: (
                                             metadata_key.clone(),
                                             metadata_lock.other.clone(),
                                         ),
-                                        write: WritePermissionsDto {
-                                            edge: true,
-                                            metadata: true,
-                                        },
+                                        write: WritePermissionsDto::both(),
                                     },
                                     enricher: enricher.clone(),
-                                })
+                                }
                             } else {
                                 context_without_metadata
                             }
@@ -148,7 +135,6 @@ impl Bootes {
                             context_without_metadata
                         }
                     })
-                    .flatten()
                     .collect::<Vec<EnricherContext>>();
                 if enricher_contexts
                     .iter()
@@ -159,10 +145,7 @@ impl Bootes {
                             bootes: BootContextDto {
                                 edge: None,
                                 metadata: (metadata_key.clone(), metadata_lock.other.clone()),
-                                write: WritePermissionsDto {
-                                    edge: false,
-                                    metadata: true,
-                                },
+                                write: WritePermissionsDto::metadata(),
                             },
                             enricher: enricher.clone(),
                         });

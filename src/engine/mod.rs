@@ -7,8 +7,10 @@ use bootes::{Bootes, EnricherContext};
 use cli::Cli;
 
 pub mod bootes;
+mod bootes_test;
 pub mod cli;
 mod contexts_dto;
+
 pub fn run(bootes: Bootes) {
     bootes
         .enrichers_contexts()

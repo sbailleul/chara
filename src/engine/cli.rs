@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    process::Command,
-};
+use std::{collections::HashMap, process::Command};
 
 use crate::types::thread::Readonly;
 
