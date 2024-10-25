@@ -3,16 +3,16 @@ use std::{
     thread::{self},
 };
 
-use bootes::{Bootes, EnricherContext};
+use chara::{Chara, EnricherContext};
 use cli::Cli;
 
-pub mod bootes;
-mod bootes_test;
+pub mod chara;
+mod chara_test;
 pub mod cli;
 mod contexts_dto;
 
-pub fn run(bootes: Bootes) {
-    bootes
+pub fn run(chara: Chara) {
+    chara
         .enrichers_contexts()
         .into_iter()
         .map(|context| {
@@ -35,7 +35,7 @@ fn handle_enricher(context: EnricherContext) {
                 Err(_) => todo!(),
             }
         }
-        if let Ok(serialized_context) = serde_json::to_string(&context.bootes) {
+        if let Ok(serialized_context) = serde_json::to_string(&context.chara) {
             let mut command = enricher.command();
             command.args(vec!["--context".to_string(), serialized_context]);
             print!("{:?}", &command.get_args().collect::<Vec<&OsStr>>());

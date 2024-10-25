@@ -68,7 +68,7 @@ Le contexte actuel dépend toujours de la définition de l'edge...
   "edges": {
     "CI": {
       "workflows": {
-        "definition": "https://github/book-club/workflows/bootes.json",
+        "definition": "https://github/book-club/workflows/chara.json",
         "enricher": "#/reusable_workflow"
       }
     },

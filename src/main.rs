@@ -5,6 +5,6 @@ use engine::run;
 use types::input::Definition;
 
 fn main() {
-    let bootes = parser::parse(&Definition::File("bootes.json".to_string()));
-    run(bootes);
+    let chara = parser::parse(&Definition::File("chara.json".to_string()));
+    run(chara);
 }

@@ -4,15 +4,15 @@ use serde_json::Map;
 
 use crate::{
     engine::{
-        bootes::{Bootes, Edge, Enricher, Install, Metadata, Tag},
+        chara::{Chara, Edge, Enricher, Install, Metadata, Tag},
         cli::{Argument, Environment},
     },
     types::thread::{readonly, Readonly},
 };
 
-use super::bootes_dto::{BootesDto, EnvironmentDto, TagDto};
+use super::chara_dto::{CharaDto, EnvironmentDto, TagDto};
 
-impl BootesDto {
+impl CharaDto {
     fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {
         self.arguments
             .iter()
@@ -25,8 +25,8 @@ impl BootesDto {
             .map(|(key, value)| (key.clone(), readonly(value.clone())))
             .collect()
     }
-    pub fn map(self) -> Bootes {
-        let mut bootes = Bootes {
+    pub fn map(self) -> Chara {
+        let mut chara = Chara {
             name: self.name.clone(),
             arguments: self.arguments(),
             environments: self.environments(),
@@ -35,14 +35,14 @@ impl BootesDto {
             enrichers: HashMap::new(),
             tags: HashMap::new(),
         };
-        self.set_enrichers(&mut bootes);
-        self.set_edges(&mut bootes);
-        self.set_tags(&mut bootes);
-        self.set_metadata(&mut bootes);
-        bootes
+        self.set_enrichers(&mut chara);
+        self.set_edges(&mut chara);
+        self.set_tags(&mut chara);
+        self.set_metadata(&mut chara);
+        chara
     }
 
-    fn set_tags(&self, bootes: &mut Bootes) {
+    fn set_tags(&self, chara: &mut Chara) {
         let tags = extract_tags(
             &readonly(Tag {
                 label: None,
@@ -52,42 +52,39 @@ impl BootesDto {
             &"#".to_string(),
             &self.tags,
         );
-        bootes.tags = tags
+        chara.tags = tags
             .into_iter()
             .map(|(_key, program, _parent_tag, tag)| (program, tag))
             .collect();
     }
 
-    fn set_enrichers(&self, bootes: &mut Bootes) {
-        bootes.enrichers = self
+    fn set_enrichers(&self, chara: &mut Chara) {
+        chara.enrichers = self
             .enrichers
             .iter()
             .map(|(key, enricher)| {
                 (
                     key.clone(),
                     readonly(Enricher {
-                        arguments: map_arguments(&enricher.arguments, &bootes.arguments),
+                        arguments: map_arguments(&enricher.arguments, &chara.arguments),
                         program: enricher.program.clone(),
                         install: enricher.install.as_ref().map(|install| Install {
-                            arguments: map_arguments(&install.arguments, &bootes.arguments),
+                            arguments: map_arguments(&install.arguments, &chara.arguments),
                             environments: map_environments(
                                 &install.environments,
-                                &bootes.environments,
+                                &chara.environments,
                             ),
                             program: install.program.clone(),
                         }),
-                        environments: map_environments(
-                            &enricher.environments,
-                            &bootes.environments,
-                        ),
+                        environments: map_environments(&enricher.environments, &chara.environments),
                     }),
                 )
             })
             .collect()
     }
 
-    fn set_edges(&self, bootes: &mut Bootes) {
-        bootes.edges = self
+    fn set_edges(&self, chara: &mut Chara) {
+        chara.edges = self
             .edges
             .iter()
             .map(|(key, edge)| {
@@ -96,7 +93,7 @@ impl BootesDto {
                     readonly(Edge {
                         definition: edge.definition.clone(),
                         enricher: edge.enricher.as_ref().and_then(|program| {
-                            bootes
+                            chara
                                 .enrichers
                                 .get(program.trim_start_matches("#/"))
                                 .cloned()
@@ -107,8 +104,8 @@ impl BootesDto {
             })
             .collect()
     }
-    fn set_metadata(&self, bootes: &mut Bootes) {
-        bootes.metadata = self
+    fn set_metadata(&self, chara: &mut Chara) {
+        chara.metadata = self
             .metadata
             .iter()
             .map(|(key, metadata)| {
@@ -119,7 +116,7 @@ impl BootesDto {
                             .edges
                             .iter()
                             .map(|program| {
-                                bootes
+                                chara
                                     .edges
                                     .get(program.trim_start_matches("#/"))
                                     .cloned()
@@ -131,7 +128,7 @@ impl BootesDto {
                             .tags
                             .iter()
                             .map(|tag| {
-                                bootes
+                                chara
                                     .tags
                                     .get(tag)
                                     .map(|found_tag| (tag.clone(), found_tag.clone()))
@@ -140,7 +137,7 @@ impl BootesDto {
                             .collect(),
                         other: metadata.other.clone(),
                         enricher: metadata.enricher.as_ref().and_then(|program| {
-                            bootes
+                            chara
                                 .enrichers
                                 .get(program.trim_start_matches("#/"))
                                 .cloned()

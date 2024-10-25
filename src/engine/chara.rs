@@ -67,7 +67,7 @@ impl Cli for Enricher {
 }
 
 #[derive(Debug)]
-pub struct Bootes {
+pub struct Chara {
     pub name: String,
     pub metadata: HashMap<String, Readonly<Metadata>>,
     pub edges: HashMap<String, Readonly<Edge>>,
@@ -78,7 +78,7 @@ pub struct Bootes {
 }
 
 pub struct EnricherContext {
-    pub bootes: BootContextDto,
+    pub chara: BootContextDto,
     pub enricher: Readonly<Enricher>,
 }
 struct EdgeContext {
@@ -87,9 +87,9 @@ struct EdgeContext {
     enricher: Readonly<Enricher>,
 }
 
-impl Bootes {
+impl Chara {
     pub fn enrichers_contexts(&self) -> Vec<EnricherContext> {
-        let bootes_contexts = self.metadata.iter().map(|(metadata_key, metadata_value)| {
+        let chara_contexts = self.metadata.iter().map(|(metadata_key, metadata_value)| {
             metadata_value.read().ok().map(|metadata_lock| {
                 let edge_contexts = metadata_lock
                     .edges
@@ -108,7 +108,7 @@ impl Bootes {
                 let mut enricher_contexts = edge_contexts
                     .map(|edge_context| {
                         let context_without_metadata = EnricherContext {
-                            bootes: BootContextDto {
+                            chara: BootContextDto {
                                 metadata: (metadata_key.clone(), metadata_lock.other.clone()),
                                 write: WritePermissionsDto::edge(),
                                 edge: Some((edge_context.key.clone(), edge_context.value.clone())),
@@ -118,7 +118,7 @@ impl Bootes {
                         if let Some(enricher) = metadata_lock.enricher.clone() {
                             if Arc::ptr_eq(&enricher, &edge_context.enricher) {
                                 EnricherContext {
-                                    bootes: BootContextDto {
+                                    chara: BootContextDto {
                                         edge: Some((edge_context.key, edge_context.value)),
                                         metadata: (
                                             metadata_key.clone(),
@@ -138,11 +138,11 @@ impl Bootes {
                     .collect::<Vec<EnricherContext>>();
                 if enricher_contexts
                     .iter()
-                    .all(|context| context.bootes.write.metadata == false)
+                    .all(|context| context.chara.write.metadata == false)
                 {
                     if let Some(enricher) = metadata_lock.enricher.clone() {
                         enricher_contexts.push(EnricherContext {
-                            bootes: BootContextDto {
+                            chara: BootContextDto {
                                 edge: None,
                                 metadata: (metadata_key.clone(), metadata_lock.other.clone()),
                                 write: WritePermissionsDto::metadata(),
@@ -154,6 +154,6 @@ impl Bootes {
                 enricher_contexts
             })
         });
-        bootes_contexts.flatten().flatten().collect()
+        chara_contexts.flatten().flatten().collect()
     }
 }

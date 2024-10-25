@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "bootes"
+name = "chara"
 version = "0.1.0"
 dependencies = [
  "map-macro",

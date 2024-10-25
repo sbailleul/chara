@@ -1,13 +1,13 @@
 use std::{fs::File, io::BufReader};
 
-use bootes_dto::BootesDto;
+use chara_dto::CharaDto;
 
-use crate::{engine::bootes::Bootes, types::input::Definition};
+use crate::{engine::chara::Chara, types::input::Definition};
 
-mod bootes_dto;
+mod chara_dto;
 mod map;
 
-pub fn parse(definition: &Definition) -> Bootes {
+pub fn parse(definition: &Definition) -> Chara {
     let result = match definition {
         Definition::File(path) => {
             let file = File::open(path).expect(format!("File {} isn't readable", path).as_str());
@@ -16,7 +16,7 @@ pub fn parse(definition: &Definition) -> Bootes {
         }
         Definition::Json(content) => serde_json::from_str(&content),
     };
-    let bootes: BootesDto = result.expect(format!("Format {:?} isn't valid", definition).as_str());
-    dbg!(&bootes);
-    bootes.map()
+    let chara: CharaDto = result.expect(format!("Format {:?} isn't valid", definition).as_str());
+    dbg!(&chara);
+    chara.map()
 }

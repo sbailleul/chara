@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod bootes {
+mod chara {
     use std::{collections::HashMap, sync::Arc};
 
     use map_macro::hash_map;
@@ -7,7 +7,7 @@ mod bootes {
 
     use crate::{
         engine::{
-            bootes::{Bootes, Edge, Enricher, Metadata},
+            chara::{Chara, Edge, Enricher, Metadata},
             contexts_dto::{BootContextDto, WritePermissionsDto},
         },
         types::thread::readonly,
@@ -33,7 +33,7 @@ mod bootes {
             other: Map::new(),
         });
 
-        let bootes = Bootes {
+        let chara = Chara {
             name: "Test".to_string(),
             metadata: hash_map! {
                 "test_metadata".to_string() => test_metadata
@@ -44,14 +44,14 @@ mod bootes {
             arguments: HashMap::new(),
             environments: HashMap::new(),
         };
-        let contexts = bootes.enrichers_contexts();
+        let contexts = chara.enrichers_contexts();
         assert_eq!(contexts.len(), 1);
-        let expected_bootes = BootContextDto {
+        let expected_chara = BootContextDto {
             write: WritePermissionsDto::both(),
             edge: Some(("test_edge".to_string(), Map::new())),
             metadata: ("test_metadata".to_string(), Map::new()),
         };
-        assert_eq!(contexts[0].bootes, expected_bootes);
+        assert_eq!(contexts[0].chara, expected_chara);
         assert!(Arc::ptr_eq(&contexts[0].enricher, &reused_enricher));
     }
 }
