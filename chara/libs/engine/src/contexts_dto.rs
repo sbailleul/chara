@@ -30,7 +30,7 @@ impl WritePermissionsDto {
 }
 #[derive(Debug, Serialize)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct BootContextDto {
+pub struct DefinitionContextDto {
     pub write: WritePermissionsDto,
     pub metadata: (String, Map<String, Value>),
     pub edge: Option<(String, Map<String, Value>)>,

@@ -1,17 +1,13 @@
 #[cfg(test)]
-mod chara {
+mod definition {
     use std::{collections::HashMap, sync::Arc};
 
     use map_macro::hash_map;
     use serde_json::Map;
+    use types::thread::readonly;
 
-    use crate::{
-        engine::{
-            chara::{Chara, Edge, Enricher, Metadata},
-            contexts_dto::{BootContextDto, WritePermissionsDto},
-        },
-        types::thread::readonly,
-    };
+    use crate::{contexts_dto::{DefinitionContextDto, WritePermissionsDto}, definition::{Definition, Edge, Enricher, Metadata}};
+
 
     #[test]
     fn context_should_group_metadata_and_edge_referencing_same_enricher() {
@@ -33,7 +29,7 @@ mod chara {
             other: Map::new(),
         });
 
-        let chara = Chara {
+        let definition = Definition {
             name: "Test".to_string(),
             metadata: hash_map! {
                 "test_metadata".to_string() => test_metadata
@@ -44,14 +40,14 @@ mod chara {
             arguments: HashMap::new(),
             environments: HashMap::new(),
         };
-        let contexts = chara.enrichers_contexts();
+        let contexts = definition.enrichers_contexts();
         assert_eq!(contexts.len(), 1);
-        let expected_chara = BootContextDto {
+        let expected_definition = DefinitionContextDto {
             write: WritePermissionsDto::both(),
             edge: Some(("test_edge".to_string(), Map::new())),
             metadata: ("test_metadata".to_string(), Map::new()),
         };
-        assert_eq!(contexts[0].chara, expected_chara);
+        assert_eq!(contexts[0].definition, expected_definition);
         assert!(Arc::ptr_eq(&contexts[0].enricher, &reused_enricher));
     }
 }

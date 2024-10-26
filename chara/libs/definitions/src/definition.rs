@@ -58,7 +58,7 @@ pub struct EnricherDto {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct CharaDto {
+pub struct DefinitionDto {
     pub name: String,
     #[serde(default)]
     pub metadata: HashMap<String, MetadataDto>,

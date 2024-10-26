@@ -1,32 +1,30 @@
 use std::{collections::HashMap, sync::Arc};
 
+use engine::{cli::{Argument, Environment}, definition::{Definition, Edge, Enricher, Install, Metadata, Tag}};
 use serde_json::Map;
 
-use crate::{
-    engine::{
-        chara::{Chara, Edge, Enricher, Install, Metadata, Tag},
-        cli::{Argument, Environment},
-    },
-    types::thread::{readonly, Readonly},
-};
 
-use super::chara_dto::{CharaDto, EnvironmentDto, TagDto};
+use types::thread::{readonly, Readonly};
 
-impl CharaDto {
+use crate::definition::{DefinitionDto, EnvironmentDto, TagDto};
+
+impl DefinitionDto {
     fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {
-        self.arguments
+        self
+            .arguments
             .iter()
             .map(|(key, value)| (key.clone(), readonly(value.clone())))
             .collect()
     }
     fn environments(&self) -> HashMap<String, Readonly<HashMap<String, String>>> {
-        self.environments
+        self
+            .environments
             .iter()
             .map(|(key, value)| (key.clone(), readonly(value.clone())))
             .collect()
     }
-    pub fn map(self) -> Chara {
-        let mut chara = Chara {
+    pub fn map(self) -> Definition {
+        let mut chara = Definition {
             name: self.name.clone(),
             arguments: self.arguments(),
             environments: self.environments(),
@@ -42,7 +40,7 @@ impl CharaDto {
         chara
     }
 
-    fn set_tags(&self, chara: &mut Chara) {
+    fn set_tags(&self, chara: &mut Definition) {
         let tags = extract_tags(
             &readonly(Tag {
                 label: None,
@@ -58,7 +56,7 @@ impl CharaDto {
             .collect();
     }
 
-    fn set_enrichers(&self, chara: &mut Chara) {
+    fn set_enrichers(&self, chara: &mut Definition) {
         chara.enrichers = self
             .enrichers
             .iter()
@@ -83,7 +81,7 @@ impl CharaDto {
             .collect()
     }
 
-    fn set_edges(&self, chara: &mut Chara) {
+    fn set_edges(&self, chara: &mut Definition) {
         chara.edges = self
             .edges
             .iter()
@@ -104,7 +102,7 @@ impl CharaDto {
             })
             .collect()
     }
-    fn set_metadata(&self, chara: &mut Chara) {
+    fn set_metadata(&self, chara: &mut Definition) {
         chara.metadata = self
             .metadata
             .iter()

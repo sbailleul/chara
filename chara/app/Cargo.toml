@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-map-macro = "0.3.0"
-serde = { version = "1.0.210", features = ["derive"] }
-serde_json = "1.0.128"
+definitions={workspace = true}
+engine={workspace = true}
+serde = { workspace = true }
+serde_json = { workspace = true }

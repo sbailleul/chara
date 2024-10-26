@@ -1,10 +1,12 @@
-use crate::{engine::contexts_dto::WritePermissionsDto, types::thread::Readonly};
 use serde_json::{Map, Value};
+use types::thread::Readonly;
 use std::{collections::HashMap, sync::Arc};
 
+use crate::contexts_dto::WritePermissionsDto;
+
 use super::{
-    cli::{Argument, Cli, Environment},
-    contexts_dto::BootContextDto,
+    cli::{Argument, Environment},
+    contexts_dto::DefinitionContextDto,
 };
 
 #[derive(Debug)]
@@ -35,17 +37,7 @@ pub struct Install {
     pub environments: Vec<Environment>,
 }
 
-impl Cli for Install {
-    fn arguments(&self) -> Vec<Argument> {
-        self.arguments.clone()
-    }
-    fn environments(&self) -> Vec<Environment> {
-        self.environments.clone()
-    }
-    fn program(&self) -> String {
-        self.program.clone()
-    }
-}
+
 
 #[derive(Debug)]
 pub struct Enricher {
@@ -54,20 +46,10 @@ pub struct Enricher {
     pub install: Option<Install>,
     pub environments: Vec<Environment>,
 }
-impl Cli for Enricher {
-    fn arguments(&self) -> Vec<Argument> {
-        self.arguments.clone()
-    }
-    fn environments(&self) -> Vec<Environment> {
-        self.environments.clone()
-    }
-    fn program(&self) -> String {
-        self.program.clone()
-    }
-}
+
 
 #[derive(Debug)]
-pub struct Chara {
+pub struct Definition {
     pub name: String,
     pub metadata: HashMap<String, Readonly<Metadata>>,
     pub edges: HashMap<String, Readonly<Edge>>,
@@ -78,7 +60,7 @@ pub struct Chara {
 }
 
 pub struct EnricherContext {
-    pub chara: BootContextDto,
+    pub definition: DefinitionContextDto,
     pub enricher: Readonly<Enricher>,
 }
 struct EdgeContext {
@@ -87,9 +69,9 @@ struct EdgeContext {
     enricher: Readonly<Enricher>,
 }
 
-impl Chara {
+impl Definition {
     pub fn enrichers_contexts(&self) -> Vec<EnricherContext> {
-        let chara_contexts = self.metadata.iter().map(|(metadata_key, metadata_value)| {
+        let definition_contexts = self.metadata.iter().map(|(metadata_key, metadata_value)| {
             metadata_value.read().ok().map(|metadata_lock| {
                 let edge_contexts = metadata_lock
                     .edges
@@ -108,7 +90,7 @@ impl Chara {
                 let mut enricher_contexts = edge_contexts
                     .map(|edge_context| {
                         let context_without_metadata = EnricherContext {
-                            chara: BootContextDto {
+                            definition: DefinitionContextDto {
                                 metadata: (metadata_key.clone(), metadata_lock.other.clone()),
                                 write: WritePermissionsDto::edge(),
                                 edge: Some((edge_context.key.clone(), edge_context.value.clone())),
@@ -118,7 +100,7 @@ impl Chara {
                         if let Some(enricher) = metadata_lock.enricher.clone() {
                             if Arc::ptr_eq(&enricher, &edge_context.enricher) {
                                 EnricherContext {
-                                    chara: BootContextDto {
+                                    definition: DefinitionContextDto {
                                         edge: Some((edge_context.key, edge_context.value)),
                                         metadata: (
                                             metadata_key.clone(),
@@ -138,11 +120,11 @@ impl Chara {
                     .collect::<Vec<EnricherContext>>();
                 if enricher_contexts
                     .iter()
-                    .all(|context| context.chara.write.metadata == false)
+                    .all(|context| context.definition.write.metadata == false)
                 {
                     if let Some(enricher) = metadata_lock.enricher.clone() {
                         enricher_contexts.push(EnricherContext {
-                            chara: BootContextDto {
+                            definition: DefinitionContextDto {
                                 edge: None,
                                 metadata: (metadata_key.clone(), metadata_lock.other.clone()),
                                 write: WritePermissionsDto::metadata(),
@@ -154,6 +136,6 @@ impl Chara {
                 enricher_contexts
             })
         });
-        chara_contexts.flatten().flatten().collect()
+        definition_contexts.flatten().flatten().collect()
     }
 }
