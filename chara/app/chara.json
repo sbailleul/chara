@@ -6,7 +6,7 @@
       "tags": ["#/CI/workflows/build"],
       "edges": ["#/workflows"],
       "file": "./.github/workflows/build-workflow.yaml",
-      "enricher": "#/reusable_workflow"
+      "processor": "#/reusable_workflow"
     },
     "quality": {
       "tags": ["#/CI/workflow/build"],
@@ -21,7 +21,7 @@
   "edges": {
     "workflows": {
       "definition": "https://github/book-club/workflows/chara.json",
-      "enricher": "#/reusable_workflow"
+      "processor": "#/reusable_workflow"
     },
     "stock": {
       "definition": "https://github/book-club/stock/chara.json"
@@ -40,9 +40,9 @@
       }
     }
   },
-  "enrichers": {
+  "processors": {
     "reusable_workflow": {
-      "program": "github-enricher",
+      "program": "github-processor",
       "install": {
         "program": "echo",
         "arguments": ["Hello world"]

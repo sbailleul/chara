@@ -6,7 +6,7 @@
       "tags": ["#/CI/workflows/build"],
       "edges": ["#/workflows"],
       "file": "./.github/workflows/build-workflow.yaml",
-      "enricher": "#/reusable_workflow"
+      "processor": "#/reusable_workflow"
     },
     "quality": {
       "tags": ["#/CI/workflow/build"],
@@ -23,7 +23,7 @@
       "definition": {
         "uri": "https://github/book-club/workflows/bootes.json"
       },
-      "enricher": "#/reusable_workflow"
+      "processor": "#/reusable_workflow"
     },
     "stock": {
       "definition": { "uri": "https://github/book-club/stock/bootes.json" }
@@ -42,9 +42,12 @@
       }
     }
   },
-  "enrichers": {
+  "processors": {
+    "http_get":{
+
+    },
     "reusable_workflow": {
-      "program": "github-enricher",
+      "program": "github-processor",
       "install": {
         "program": "echo",
         "arguments": ["Hello world"]

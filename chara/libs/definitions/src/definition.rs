@@ -1,4 +1,3 @@
-use engine::definition::ForeignDefinition;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 
@@ -22,28 +21,23 @@ pub struct MetadataDto {
     pub tags: Vec<String>,
     #[serde(flatten)]
     pub other: Map<String, Value>,
-    pub enricher: Option<String>,
+    pub processor: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct HttpDefinitionDto {
-    pub uri: String,
+pub struct ProcessorDefinitionDto {
     #[serde(default)]
     pub arguments: Vec<String>,
     #[serde(default)]
     pub environments: Vec<EnvironmentDto>,
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
-pub enum ForeignDefinitionDto {
-    Http(HttpDefinitionDto),
-}
+
 
 #[derive(Debug, Deserialize)]
 pub struct EdgeDto {
-    pub definition: Option<ForeignDefinitionDto>,
-    pub enricher: Option<String>,
+    pub definition: Option<String>,
+    pub processor: Option<String>,
     #[serde(flatten)]
     pub other: Map<String, Value>,
 }
@@ -65,7 +59,7 @@ pub enum EnvironmentDto {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct EnricherDto {
+pub struct ProcessorDto {
     #[serde(default)]
     pub arguments: Vec<String>,
     #[serde(default)]
@@ -84,7 +78,7 @@ pub struct DefinitionDto {
     #[serde(default)]
     pub tags: HashMap<String, TagDto>,
     #[serde(default)]
-    pub enrichers: HashMap<String, EnricherDto>,
+    pub processors: HashMap<String, ProcessorDto>,
     #[serde(default)]
     pub arguments: HashMap<String, Vec<String>>,
     #[serde(default)]

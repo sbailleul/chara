@@ -1,40 +1,17 @@
-use std::{collections::HashMap, sync::Arc};
+use core::hash;
+use std::{collections::HashMap, hash::Hash, path, sync::Arc};
 
 use engine::{
     cli::{Argument, Environment},
     definition::{
-        Definition, DefinitionInput, Edge, Enricher, ForeignDefinition, HttpDefinition, Install,
-        Metadata, Tag,
+        Definition, DefinitionInput, Edge, ForeignDefinition, Install, Metadata, Processor, Tag,
     },
 };
 use serde_json::Map;
 
 use types::thread::{readonly, Readonly};
 
-use crate::definition::{
-    DefinitionDto, EnvironmentDto, ForeignDefinitionDto, HttpDefinitionDto, TagDto,
-};
-
-impl HttpDefinitionDto {
-    pub fn map(
-        &self,
-        arguments: &HashMap<String, Readonly<Vec<String>>>,
-        environments: &HashMap<String, Readonly<HashMap<String, String>>>,
-    ) -> HttpDefinition {
-        HttpDefinition {
-            arguments: map_arguments(&self.arguments, arguments),
-            environments: map_environments(&self.environments, environments),
-            uri: self.uri.clone(),
-        }
-    }
-}
-impl ForeignDefinitionDto {
-    pub fn key(&self) -> String {
-        match self {
-            ForeignDefinitionDto::Http(http_definition_dto) => http_definition_dto.uri.clone(),
-        }
-    }
-}
+use crate::definition::{DefinitionDto, EnvironmentDto, ProcessorDefinitionDto, TagDto};
 
 impl DefinitionDto {
     fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {
@@ -56,11 +33,11 @@ impl DefinitionDto {
             environments: self.environments(),
             edges: HashMap::new(),
             metadata: HashMap::new(),
-            enrichers: HashMap::new(),
+            processors: HashMap::new(),
             tags: HashMap::new(),
             foreign_definitions: HashMap::new(),
         };
-        self.set_enrichers(&mut chara);
+        self.set_processors(&mut chara);
         self.set_edges(&mut chara);
         self.set_tags(&mut chara);
         self.set_metadata(&mut chara);
@@ -83,17 +60,17 @@ impl DefinitionDto {
             .collect();
     }
 
-    fn set_enrichers(&self, chara: &mut Definition) {
-        chara.enrichers = self
-            .enrichers
+    fn set_processors(&self, chara: &mut Definition) {
+        chara.processors = self
+            .processors
             .iter()
-            .map(|(key, enricher)| {
+            .map(|(key, processor)| {
                 (
                     key.clone(),
-                    readonly(Enricher {
-                        arguments: map_arguments(&enricher.arguments, &chara.arguments),
-                        program: enricher.program.clone(),
-                        install: enricher.install.as_ref().map(|install| Install {
+                    readonly(Processor {
+                        arguments: map_arguments(&processor.arguments, &chara.arguments),
+                        program: processor.program.clone(),
+                        install: processor.install.as_ref().map(|install| Install {
                             arguments: map_arguments(&install.arguments, &chara.arguments),
                             environments: map_environments(
                                 &install.environments,
@@ -101,7 +78,10 @@ impl DefinitionDto {
                             ),
                             program: install.program.clone(),
                         }),
-                        environments: map_environments(&enricher.environments, &chara.environments),
+                        environments: map_environments(
+                            &processor.environments,
+                            &chara.environments,
+                        ),
                     }),
                 )
             })
@@ -113,30 +93,40 @@ impl DefinitionDto {
             .edges
             .iter()
             .map(|(key, edge)| {
-                let definition = edge.definition.as_ref().map(|definition| {
-                    if let Some(definition) = chara.foreign_definitions.get(&definition.key()) {
-                        definition.clone()
-                    } else {
-                        readonly(ForeignDefinition {
-                            input: match definition {
-                                ForeignDefinitionDto::Http(http_definition_dto) => {
-                                    DefinitionInput::Http(
-                                        http_definition_dto
-                                            .map(&chara.arguments, &chara.environments),
-                                    )
-                                }
-                            },
-                            output: None,
-                        })
-                    }
-                });
+                let definition = edge
+                    .definition
+                    .as_ref()
+                    .map(|definition| {
+                        if let Some(definition) = chara.foreign_definitions.get(definition) {
+                            Some(definition.clone())
+                        } else {
+                            let definition_input = if path::Path::new(definition).exists() {
+                                Some(DefinitionInput::File(definition.clone()))
+                            } else if let Ok(content) = serde_json::from_str(definition) {
+                                Some(DefinitionInput::Value(content))
+                            } else if let Some(processor) = chara.processors.get(definition) {
+                                Some(DefinitionInput::Processor(processor.clone()))
+                            } else {
+                                None
+                            };
+                            definition_input.map(|definition_input| {
+                                let foreign_definition =
+                                    readonly(ForeignDefinition::input(definition_input));
+                                chara
+                                    .foreign_definitions
+                                    .insert(definition.clone(), foreign_definition.clone());
+                                foreign_definition
+                            })
+                        }
+                    })
+                    .flatten();
                 (
                     key.clone(),
                     readonly(Edge {
                         definition,
-                        enricher: edge.enricher.as_ref().and_then(|program| {
+                        processor: edge.processor.as_ref().and_then(|program| {
                             chara
-                                .enrichers
+                                .processors
                                 .get(program.trim_start_matches("#/"))
                                 .cloned()
                         }),
@@ -178,9 +168,9 @@ impl DefinitionDto {
                             .flatten()
                             .collect(),
                         other: metadata.other.clone(),
-                        enricher: metadata.enricher.as_ref().and_then(|program| {
+                        processor: metadata.processor.as_ref().and_then(|program| {
                             chara
-                                .enrichers
+                                .processors
                                 .get(program.trim_start_matches("#/"))
                                 .cloned()
                         }),

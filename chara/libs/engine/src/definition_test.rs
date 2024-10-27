@@ -6,12 +6,12 @@ mod definition {
     use serde_json::Map;
     use types::thread::readonly;
 
-    use crate::{contexts_dto::{DefinitionContextDto, WritePermissionsDto}, definition::{Definition, Edge, Enricher, Metadata}};
+    use crate::{contexts_dto::{DefinitionContextDto, WritePermissionsDto}, definition::{Definition, Edge, Processor, Metadata}};
 
 
     #[test]
-    fn context_should_group_metadata_and_edge_referencing_same_enricher() {
-        let reused_enricher = readonly(Enricher {
+    fn context_should_group_metadata_and_edge_referencing_same_processor() {
+        let reused_processor = readonly(Processor {
             arguments: vec![],
             environments: vec![],
             install: None,
@@ -19,12 +19,12 @@ mod definition {
         });
         let test_edge = readonly(Edge {
             definition: None,
-            enricher: Some(reused_enricher.clone()),
+            processor: Some(reused_processor.clone()),
             other: Map::new(),
         });
         let test_metadata = readonly(Metadata {
             edges: hash_map! {"test_edge".to_string() => test_edge.clone()},
-            enricher: Some(reused_enricher.clone()),
+            processor: Some(reused_processor.clone()),
             tags: HashMap::new(),
             other: Map::new(),
         });
@@ -36,12 +36,12 @@ mod definition {
             },
             edges: HashMap::new(),
             tags: HashMap::new(),
-            enrichers: HashMap::new(),
+            processors: HashMap::new(),
             arguments: HashMap::new(),
             environments: HashMap::new(),
             foreign_definitions: HashMap::new()
         };
-        let contexts = definition.enrichers_contexts();
+        let contexts = definition.processors_contexts();
         assert_eq!(contexts.len(), 1);
         let expected_definition = DefinitionContextDto {
             write: WritePermissionsDto::both(),
@@ -49,6 +49,6 @@ mod definition {
             metadata: ("test_metadata".to_string(), Map::new()),
         };
         assert_eq!(contexts[0].definition, expected_definition);
-        assert!(Arc::ptr_eq(&contexts[0].enricher, &reused_enricher));
+        assert!(Arc::ptr_eq(&contexts[0].processor, &reused_processor));
     }
 }

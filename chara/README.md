@@ -69,14 +69,14 @@ Le contexte actuel dépend toujours de la définition de l'edge...
     "CI": {
       "workflows": {
         "definition": "https://github/book-club/workflows/chara.json",
-        "enricher": "#/reusable_workflow"
+        "processor": "#/reusable_workflow"
       }
     },
     "functional": {
       "stock": {}
     }
   },
-  "enrichers": {
+  "processors": {
     "reusable_workflow": {
       "environments": ["#/github"],
       "arguments": ["#/workflow"]

@@ -2,7 +2,7 @@ use std::{collections::HashMap, process::Command};
 
 use engine::{
     cli::{Argument, Environment},
-    definition::{Enricher, Install},
+    definition::{Processor, Install},
 };
 
 pub trait Inputs {
@@ -23,6 +23,7 @@ pub trait Inputs {
             .collect()
     }
 }
+
 pub trait Cli: Inputs {
     fn program(&self) -> String;
     fn command(&self) -> Command {
@@ -31,7 +32,11 @@ pub trait Cli: Inputs {
             .envs(self.flatten_environments());
         cmd
     }
+    fn output_stdout(&self) -> Option<String >{
+        self.command().output().ok().and_then(|output| String::from_utf8(output.stdout).ok())
+    }
 }
+
 
 impl Inputs for Install {
     fn arguments(&self) -> Vec<Argument> {
@@ -48,7 +53,7 @@ impl Cli  for Install {
     }
 }
 
-impl Inputs for Enricher {
+impl Inputs for Processor {
     fn arguments(&self) -> Vec<Argument> {
         self.arguments.clone()
     }
@@ -56,7 +61,7 @@ impl Inputs for Enricher {
         self.environments.clone()
     }
 }
-impl Cli for Enricher {
+impl Cli for Processor {
 
     fn program(&self) -> String {
         self.program.clone()
