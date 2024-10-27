@@ -1,6 +1,6 @@
 use serde_json::{Map, Value};
-use types::thread::Readonly;
 use std::{collections::HashMap, sync::Arc};
+use types::thread::Readonly;
 
 use crate::contexts_dto::WritePermissionsDto;
 
@@ -8,6 +8,12 @@ use super::{
     cli::{Argument, Environment},
     contexts_dto::DefinitionContextDto,
 };
+#[derive(Debug)]
+pub enum DefinitionInput {
+    File(String),
+    Text(String),
+    Http(HttpDefinition),
+}
 
 #[derive(Debug)]
 pub struct Tag {
@@ -25,7 +31,7 @@ pub struct Metadata {
 
 #[derive(Debug)]
 pub struct Edge {
-    pub definition: Option<String>,
+    pub definition: Option<Readonly<ForeignDefinition>>,
     pub enricher: Option<Readonly<Enricher>>,
     pub other: Map<String, Value>,
 }
@@ -37,7 +43,18 @@ pub struct Install {
     pub environments: Vec<Environment>,
 }
 
+#[derive(Debug)]
+pub struct HttpDefinition {
+    pub arguments: Vec<Argument>,
+    pub environments: Vec<Environment>,
+    pub uri: String,
+}
 
+#[derive(Debug)]
+pub struct ForeignDefinition {
+    pub input: DefinitionInput,
+    pub output: Option<Definition>,
+}
 
 #[derive(Debug)]
 pub struct Enricher {
@@ -46,7 +63,6 @@ pub struct Enricher {
     pub install: Option<Install>,
     pub environments: Vec<Environment>,
 }
-
 
 #[derive(Debug)]
 pub struct Definition {
@@ -57,6 +73,7 @@ pub struct Definition {
     pub enrichers: HashMap<String, Readonly<Enricher>>,
     pub arguments: HashMap<String, Readonly<Vec<String>>>,
     pub environments: HashMap<String, Readonly<HashMap<String, String>>>,
+    pub foreign_definitions: HashMap<String, Readonly<ForeignDefinition>>,
 }
 
 pub struct EnricherContext {

@@ -3,20 +3,16 @@ use std::{
 };
 
 use contexts_dto::DefinitionContextDto;
-use definition::{Definition, EnricherContext};
+use definition::{Definition, DefinitionInput, EnricherContext, ForeignDefinition};
 
 pub mod definition;
 mod definition_test;
 pub mod cli;
 mod contexts_dto;
-#[derive(Debug)]
-pub enum DefinitionInput {
-    File(String),
-    Text(String),
-}
+
 
 pub trait Definitions: Send + Sync{
-     fn get(&self, definition: &DefinitionInput) -> Definition;
+     fn get(&self, definition: &DefinitionInput) -> Option<Definition>;
      fn enrich(&self, context: &EnricherContext) -> Option<Definition>;
 }
 pub fn run(chara: Definition, definitions:  Arc< dyn Definitions>) {

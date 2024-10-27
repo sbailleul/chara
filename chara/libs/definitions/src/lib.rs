@@ -3,15 +3,15 @@ use std::{ffi::OsStr, fs::File, io::BufReader};
 use cli::Cli;
 use definition::DefinitionDto;
 use engine::{
-    definition::{Definition, EnricherContext},
-    DefinitionInput, Definitions as ForeignDefinitions,
+    definition::{Definition, DefinitionInput, EnricherContext},
+    Definitions as ForeignDefinitions,
 };
 mod cli;
 mod definition;
 mod map;
 pub struct Definitions {}
 impl ForeignDefinitions for Definitions {
-    fn get(&self, definition: &DefinitionInput) -> Definition {
+    fn get(&self, definition: &DefinitionInput) -> Option<Definition> {
         let result = match definition {
             DefinitionInput::File(path) => {
                 let file =
@@ -20,11 +20,12 @@ impl ForeignDefinitions for Definitions {
                 serde_json::from_reader(reader)
             }
             DefinitionInput::Text(content) => serde_json::from_str(&content),
+            _ =>  serde_json::from_str("")
         };
         let definition: DefinitionDto =
             result.expect(format!("Format {:?} isn't valid", definition).as_str());
         dbg!(&definition);
-        definition.map()
+        Some(definition.map())
     }
 
     fn enrich(&self, context: &EnricherContext) -> Option<Definition> {

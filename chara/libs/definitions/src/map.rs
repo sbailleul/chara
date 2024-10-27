@@ -1,24 +1,50 @@
 use std::{collections::HashMap, sync::Arc};
 
-use engine::{cli::{Argument, Environment}, definition::{Definition, Edge, Enricher, Install, Metadata, Tag}};
+use engine::{
+    cli::{Argument, Environment},
+    definition::{
+        Definition, DefinitionInput, Edge, Enricher, ForeignDefinition, HttpDefinition, Install,
+        Metadata, Tag,
+    },
+};
 use serde_json::Map;
-
 
 use types::thread::{readonly, Readonly};
 
-use crate::definition::{DefinitionDto, EnvironmentDto, TagDto};
+use crate::definition::{
+    DefinitionDto, EnvironmentDto, ForeignDefinitionDto, HttpDefinitionDto, TagDto,
+};
+
+impl HttpDefinitionDto {
+    pub fn map(
+        &self,
+        arguments: &HashMap<String, Readonly<Vec<String>>>,
+        environments: &HashMap<String, Readonly<HashMap<String, String>>>,
+    ) -> HttpDefinition {
+        HttpDefinition {
+            arguments: map_arguments(&self.arguments, arguments),
+            environments: map_environments(&self.environments, environments),
+            uri: self.uri.clone(),
+        }
+    }
+}
+impl ForeignDefinitionDto {
+    pub fn key(&self) -> String {
+        match self {
+            ForeignDefinitionDto::Http(http_definition_dto) => http_definition_dto.uri.clone(),
+        }
+    }
+}
 
 impl DefinitionDto {
     fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {
-        self
-            .arguments
+        self.arguments
             .iter()
             .map(|(key, value)| (key.clone(), readonly(value.clone())))
             .collect()
     }
     fn environments(&self) -> HashMap<String, Readonly<HashMap<String, String>>> {
-        self
-            .environments
+        self.environments
             .iter()
             .map(|(key, value)| (key.clone(), readonly(value.clone())))
             .collect()
@@ -32,6 +58,7 @@ impl DefinitionDto {
             metadata: HashMap::new(),
             enrichers: HashMap::new(),
             tags: HashMap::new(),
+            foreign_definitions: HashMap::new(),
         };
         self.set_enrichers(&mut chara);
         self.set_edges(&mut chara);
@@ -86,10 +113,27 @@ impl DefinitionDto {
             .edges
             .iter()
             .map(|(key, edge)| {
+                let definition = edge.definition.as_ref().map(|definition| {
+                    if let Some(definition) = chara.foreign_definitions.get(&definition.key()) {
+                        definition.clone()
+                    } else {
+                        readonly(ForeignDefinition {
+                            input: match definition {
+                                ForeignDefinitionDto::Http(http_definition_dto) => {
+                                    DefinitionInput::Http(
+                                        http_definition_dto
+                                            .map(&chara.arguments, &chara.environments),
+                                    )
+                                }
+                            },
+                            output: None,
+                        })
+                    }
+                });
                 (
                     key.clone(),
                     readonly(Edge {
-                        definition: edge.definition.clone(),
+                        definition,
                         enricher: edge.enricher.as_ref().and_then(|program| {
                             chara
                                 .enrichers

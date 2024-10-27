@@ -20,11 +20,13 @@
   },
   "edges": {
     "workflows": {
-      "definition": "https://github/book-club/workflows/bootes.json",
+      "definition": {
+        "uri": "https://github/book-club/workflows/bootes.json"
+      },
       "enricher": "#/reusable_workflow"
     },
     "stock": {
-      "definition": "https://github/book-club/stock/bootes.json"
+      "definition": { "uri": "https://github/book-club/stock/bootes.json" }
     }
   },
   "tags": {

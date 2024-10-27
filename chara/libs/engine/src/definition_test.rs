@@ -39,6 +39,7 @@ mod definition {
             enrichers: HashMap::new(),
             arguments: HashMap::new(),
             environments: HashMap::new(),
+            foreign_definitions: HashMap::new()
         };
         let contexts = definition.enrichers_contexts();
         assert_eq!(contexts.len(), 1);

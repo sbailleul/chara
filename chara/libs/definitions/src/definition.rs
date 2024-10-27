@@ -1,7 +1,9 @@
+use engine::definition::ForeignDefinition;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 
 use std::collections::HashMap;
+
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct TagDto {
@@ -24,8 +26,23 @@ pub struct MetadataDto {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct HttpDefinitionDto {
+    pub uri: String,
+    #[serde(default)]
+    pub arguments: Vec<String>,
+    #[serde(default)]
+    pub environments: Vec<EnvironmentDto>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum ForeignDefinitionDto {
+    Http(HttpDefinitionDto),
+}
+
+#[derive(Debug, Deserialize)]
 pub struct EdgeDto {
-    pub definition: Option<String>,
+    pub definition: Option<ForeignDefinitionDto>,
     pub enricher: Option<String>,
     #[serde(flatten)]
     pub other: Map<String, Value>,
