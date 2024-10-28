@@ -2,7 +2,7 @@ use std::{collections::HashMap, process::Command};
 
 use engine::{
     cli::{Argument, Environment},
-    definition::{Processor, Install},
+    definition::{Install, Processor, ProcessorOverride},
 };
 
 pub trait Inputs {
@@ -25,18 +25,23 @@ pub trait Inputs {
 }
 
 pub trait Cli: Inputs {
-    fn program(&self) -> String;
-    fn command(&self) -> Command {
-        let mut cmd = Command::new(self.program());
-        cmd.args(self.flatten_arguments())
-            .envs(self.flatten_environments());
-        cmd
+    fn program(&self) -> Option<String>;
+    fn command(&self) -> Option<Command> {
+        self.program().map(|program| {
+            let mut cmd = Command::new(program);
+            cmd.args(self.flatten_arguments())
+                .envs(self.flatten_environments());
+            cmd
+        })
     }
-    fn output_stdout(&self) -> Option<String >{
-        self.command().output().ok().and_then(|output| String::from_utf8(output.stdout).ok())
+    fn output_stdout(&self) -> Option<String> {
+        self.command().and_then(|mut cmd| {
+            cmd.output()
+                .ok()
+                .and_then(|output| String::from_utf8(output.stdout).ok())
+        })
     }
 }
-
 
 impl Inputs for Install {
     fn arguments(&self) -> Vec<Argument> {
@@ -46,10 +51,9 @@ impl Inputs for Install {
         self.environments.clone()
     }
 }
-impl Cli  for Install {
-
-    fn program(&self) -> String {
-        self.program.clone()
+impl Cli for Install {
+    fn program(&self) -> Option<String> {
+        Some(self.program.clone())
     }
 }
 
@@ -62,9 +66,43 @@ impl Inputs for Processor {
     }
 }
 impl Cli for Processor {
-
-    fn program(&self) -> String {
-        self.program.clone()
+    fn program(&self) -> Option<String> {
+        Some(self.program.clone())
     }
 }
 
+impl Inputs for ProcessorOverride {
+    fn arguments(&self) -> Vec<Argument> {
+        self.arguments
+            .clone()
+            .into_iter()
+            .chain(
+                self.processor
+                    .read()
+                    .map_or(vec![], |processor| processor.arguments())
+                    .into_iter(),
+            )
+            .collect()
+    }
+
+    fn environments(&self) -> Vec<Environment> {
+        self.environments
+            .clone()
+            .into_iter()
+            .chain(
+                self.processor
+                    .read()
+                    .map_or(vec![], |processor| processor.environments())
+                    .into_iter(),
+            )
+            .collect()
+    }
+}
+impl Cli for ProcessorOverride {
+    fn program(&self) -> Option<String> {
+        self.processor
+            .read()
+            .ok()
+            .and_then(|processor| processor.program())
+    }
+}

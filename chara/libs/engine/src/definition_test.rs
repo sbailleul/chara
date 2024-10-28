@@ -6,8 +6,10 @@ mod definition {
     use serde_json::Map;
     use types::thread::readonly;
 
-    use crate::{contexts_dto::{DefinitionContextDto, WritePermissionsDto}, definition::{Definition, Edge, Processor, Metadata}};
-
+    use crate::{
+        contexts_dto::{DefinitionContextDto, WritePermissionsDto},
+        definition::{Definition, Edge, Metadata, Processor, ProcessorOverride},
+    };
 
     #[test]
     fn context_should_group_metadata_and_edge_referencing_same_processor() {
@@ -19,12 +21,12 @@ mod definition {
         });
         let test_edge = readonly(Edge {
             definition: None,
-            processor: Some(reused_processor.clone()),
+            processor: Some(ProcessorOverride::processor(&reused_processor)),
             other: Map::new(),
         });
         let test_metadata = readonly(Metadata {
             edges: hash_map! {"test_edge".to_string() => test_edge.clone()},
-            processor: Some(reused_processor.clone()),
+            processor: Some(ProcessorOverride::processor(&reused_processor)),
             tags: HashMap::new(),
             other: Map::new(),
         });
@@ -39,7 +41,7 @@ mod definition {
             processors: HashMap::new(),
             arguments: HashMap::new(),
             environments: HashMap::new(),
-            foreign_definitions: HashMap::new()
+            foreign_definitions: HashMap::new(),
         };
         let contexts = definition.processors_contexts();
         assert_eq!(contexts.len(), 1);
@@ -49,6 +51,9 @@ mod definition {
             metadata: ("test_metadata".to_string(), Map::new()),
         };
         assert_eq!(contexts[0].definition, expected_definition);
-        assert!(Arc::ptr_eq(&contexts[0].processor, &reused_processor));
+        assert!(Arc::ptr_eq(
+            &contexts[0].processor.processor,
+            &reused_processor
+        ));
     }
 }

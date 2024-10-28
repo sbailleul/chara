@@ -21,23 +21,14 @@ pub struct MetadataDto {
     pub tags: Vec<String>,
     #[serde(flatten)]
     pub other: Map<String, Value>,
-    pub processor: Option<String>,
+    pub processor: Option<NodeProcessorDto>,
 }
-
-#[derive(Debug, Deserialize)]
-pub struct ProcessorDefinitionDto {
-    #[serde(default)]
-    pub arguments: Vec<String>,
-    #[serde(default)]
-    pub environments: Vec<EnvironmentDto>,
-}
-
 
 
 #[derive(Debug, Deserialize)]
 pub struct EdgeDto {
     pub definition: Option<String>,
-    pub processor: Option<String>,
+    pub processor: Option<NodeProcessorDto>,
     #[serde(flatten)]
     pub other: Map<String, Value>,
 }
@@ -66,6 +57,21 @@ pub struct ProcessorDto {
     pub environments: Vec<EnvironmentDto>,
     pub program: String,
     pub install: Option<InstallDto>,
+}
+#[derive(Debug, Deserialize)]
+pub struct ProcessorOverrideDto{
+    pub reference: String,
+    #[serde(default)]
+    pub arguments: Vec<String>,
+    #[serde(default)]
+    pub environments: Vec<EnvironmentDto>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum NodeProcessorDto{
+    Reference(String),
+    Processor(ProcessorOverrideDto)
 }
 
 #[derive(Deserialize, Debug)]

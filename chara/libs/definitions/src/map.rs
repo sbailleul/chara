@@ -4,14 +4,17 @@ use std::{collections::HashMap, hash::Hash, path, sync::Arc};
 use engine::{
     cli::{Argument, Environment},
     definition::{
-        Definition, DefinitionInput, Edge, ForeignDefinition, Install, Metadata, Processor, Tag,
+        Definition, DefinitionInput, Edge, ForeignDefinition, Install, Metadata, Processor,
+        ProcessorOverride, Tag,
     },
 };
 use serde_json::Map;
 
 use types::thread::{readonly, Readonly};
 
-use crate::definition::{DefinitionDto, EnvironmentDto, ProcessorDefinitionDto, TagDto};
+use crate::definition::{
+    DefinitionDto, EnvironmentDto, NodeProcessorDto, TagDto,
+};
 
 impl DefinitionDto {
     fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {
@@ -27,7 +30,7 @@ impl DefinitionDto {
             .collect()
     }
     pub fn map(self) -> Definition {
-        let mut chara = Definition {
+        let mut definition = Definition {
             name: self.name.clone(),
             arguments: self.arguments(),
             environments: self.environments(),
@@ -37,11 +40,11 @@ impl DefinitionDto {
             tags: HashMap::new(),
             foreign_definitions: HashMap::new(),
         };
-        self.set_processors(&mut chara);
-        self.set_edges(&mut chara);
-        self.set_tags(&mut chara);
-        self.set_metadata(&mut chara);
-        chara
+        self.set_processors(&mut definition);
+        self.set_edges(&mut definition);
+        self.set_tags(&mut definition);
+        self.set_metadata(&mut definition);
+        definition
     }
 
     fn set_tags(&self, chara: &mut Definition) {
@@ -124,20 +127,15 @@ impl DefinitionDto {
                     key.clone(),
                     readonly(Edge {
                         definition,
-                        processor: edge.processor.as_ref().and_then(|program| {
-                            chara
-                                .processors
-                                .get(program.trim_start_matches("#/"))
-                                .cloned()
-                        }),
+                        processor: edge.processor.as_ref().and_then(|processor| map_node_processor(&processor, &chara)),
                         other: edge.other.clone(),
                     }),
                 )
             })
             .collect()
     }
-    fn set_metadata(&self, chara: &mut Definition) {
-        chara.metadata = self
+    fn set_metadata(&self, definition: &mut Definition) {
+        definition.metadata = self
             .metadata
             .iter()
             .map(|(key, metadata)| {
@@ -148,7 +146,7 @@ impl DefinitionDto {
                             .edges
                             .iter()
                             .map(|program| {
-                                chara
+                                definition
                                     .edges
                                     .get(program.trim_start_matches("#/"))
                                     .cloned()
@@ -160,7 +158,7 @@ impl DefinitionDto {
                             .tags
                             .iter()
                             .map(|tag| {
-                                chara
+                                definition
                                     .tags
                                     .get(tag)
                                     .map(|found_tag| (tag.clone(), found_tag.clone()))
@@ -168,11 +166,8 @@ impl DefinitionDto {
                             .flatten()
                             .collect(),
                         other: metadata.other.clone(),
-                        processor: metadata.processor.as_ref().and_then(|program| {
-                            chara
-                                .processors
-                                .get(program.trim_start_matches("#/"))
-                                .cloned()
+                        processor: metadata.processor.as_ref().and_then(|processor| {
+                            map_node_processor(processor, definition)
                         }),
                     }),
                 )
@@ -180,7 +175,28 @@ impl DefinitionDto {
             .collect()
     }
 }
-
+fn map_node_processor(
+    node_processor: &NodeProcessorDto,
+    definition: &Definition,
+) -> Option<ProcessorOverride> {
+    match node_processor {
+        NodeProcessorDto::Reference(reference) => definition
+            .processors
+            .get(reference)
+            .map(|processor| ProcessorOverride::processor(processor)),
+        NodeProcessorDto::Processor(processor_override) => definition
+            .processors
+            .get(&processor_override.reference)
+            .map(|processor| ProcessorOverride {
+                arguments: map_arguments(&processor_override.arguments, &definition.arguments),
+                environments: map_environments(
+                    &processor_override.environments,
+                    &definition.environments,
+                ),
+                processor: processor.clone(),
+            }),
+    }
+}
 fn map_arguments(
     dto_arguments: &Vec<String>,
     arguments: &HashMap<String, Readonly<Vec<String>>>,

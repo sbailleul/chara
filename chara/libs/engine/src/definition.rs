@@ -27,13 +27,13 @@ pub struct Metadata {
     pub edges: HashMap<String, Readonly<Edge>>,
     pub tags: HashMap<String, Readonly<Tag>>,
     pub other: Map<String, Value>,
-    pub processor: Option<Readonly<Processor>>,
+    pub processor: Option<ProcessorOverride>,
 }
 
 #[derive(Debug)]
 pub struct Edge {
     pub definition: Option<Readonly<ForeignDefinition>>,
-    pub processor: Option<Readonly<Processor>>,
+    pub processor: Option<ProcessorOverride>,
     pub other: Map<String, Value>,
 }
 
@@ -66,6 +66,30 @@ pub struct Processor {
     pub environments: Vec<Environment>,
 }
 
+#[derive(Debug, Clone)]
+pub struct ProcessorOverride {
+    pub arguments: Vec<Argument>,
+    pub environments: Vec<Environment>,
+    pub processor: Readonly<Processor>,
+}
+impl ProcessorOverride {
+    pub fn processor(processor: &Readonly<Processor>) -> Self {
+        Self {
+            arguments: vec![],
+            environments: vec![],
+            processor: processor.clone(),
+        }
+    }
+}
+impl PartialEq for ProcessorOverride {
+    fn eq(&self, other: &Self) -> bool {
+        self.arguments == other.arguments
+            && self.environments == other.environments
+            && Arc::ptr_eq(&self.processor, &other.processor)
+    }
+}
+impl Eq for ProcessorOverride {}
+
 #[derive(Debug)]
 pub struct Definition {
     pub name: String,
@@ -80,13 +104,13 @@ pub struct Definition {
 
 pub struct ProcessorContext {
     pub definition: DefinitionContextDto,
-    pub processor: Readonly<Processor>,
+    pub processor: ProcessorOverride,
 }
 struct EdgeContext {
     key: String,
     value: Map<String, Value>,
     definition: Option<Readonly<ForeignDefinition>>,
-    processor: Readonly<Processor>,
+    processor: ProcessorOverride,
 }
 
 impl Definition {
@@ -99,7 +123,7 @@ impl Definition {
                     .into_iter()
                     .map(|(edge_key, edge_value)| {
                         edge_value.read().ok().and_then(|edge_lock| {
-                            edge_lock.processor.clone().map(|processor| EdgeContext {
+                            edge_lock.processor.as_ref().map(|processor| EdgeContext {
                                 key: edge_key.clone(),
                                 value: edge_lock.other.clone(),
                                 processor: processor.clone(),
@@ -119,7 +143,7 @@ impl Definition {
                             processor: edge_context.processor.clone(),
                         };
                         if let Some(processor) = metadata_lock.processor.clone() {
-                            if Arc::ptr_eq(&processor, &edge_context.processor) {
+                            if processor == edge_context.processor {
                                 ProcessorContext {
                                     definition: DefinitionContextDto {
                                         edge: Some((edge_context.key, edge_context.value)),
