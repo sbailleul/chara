@@ -20,7 +20,7 @@
   },
   "edges": {
     "workflows": {
-      "definition": "https://github/book-club/workflows/chara.json",
+      "definition": "#/http_client",
       "processor": "#/reusable_workflow"
     },
     "stock": {
@@ -49,6 +49,10 @@
       },
       "environments": ["#/github", { "HTTP_PROXY": "localhost:6018" }],
       "arguments": ["#/workflow"]
+    },
+    "http_client":{
+      "program": "cargo",
+      "arguments":["run","--","../../scrappers/http"]
     }
   },
   "arguments": {

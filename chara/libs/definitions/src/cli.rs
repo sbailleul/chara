@@ -37,8 +37,17 @@ pub trait Cli: Inputs {
     fn output_stdout(&self) -> Option<String> {
         self.command().and_then(|mut cmd| {
             cmd.output()
+                .inspect_err(|err| println!("{err}"))
                 .ok()
-                .and_then(|output| String::from_utf8(output.stdout).ok())
+                .and_then(|output| {
+                    let stdout = String::from_utf8(output.stdout);
+                    if let Ok(stdout) = stdout {
+                        Some(stdout)
+                    } else {
+                        String::from_utf8(output.stderr)
+                            .inspect_err(|err| println!("parse error {err}")).ok()
+                    }
+                })
         })
     }
 }

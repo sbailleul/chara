@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, hash::Hash, sync::Arc};
 
 use types::thread::Readonly;
 
@@ -17,6 +17,18 @@ impl PartialEq for Argument {
     }
 }
 impl Eq for Argument {}
+impl Hash for Argument {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Argument::Value(v) => v.hash(state),
+            Argument::Reference(arc) => {
+                if let Ok(v) = arc.read(){
+                    v.hash(state);
+                } 
+            }
+        }
+    }
+}
 
 impl Argument {
     pub fn unwrap(&self) -> Vec<String> {

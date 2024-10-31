@@ -1,5 +1,5 @@
 use serde_json::{Map, Value};
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::{HashMap, HashSet}, hash::{Hash, Hasher}, sync::Arc};
 use types::thread::Readonly;
 
 use crate::contexts_dto::WritePermissionsDto;
@@ -8,12 +8,12 @@ use super::{
     cli::{Argument, Environment},
     contexts_dto::DefinitionContextDto,
 };
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum DefinitionInput {
     File(String),
     Text(String),
     Value(Value),
-    Processor(Readonly<Processor>),
+    Processor(ProcessorOverride),
 }
 
 #[derive(Debug)]
@@ -184,3 +184,22 @@ impl Definition {
         definition_contexts.flatten().flatten().collect()
     }
 }
+
+
+// struct Toto{
+
+// }
+// impl Hash for Toto {
+//     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+//     }
+// }
+// impl PartialEq for Toto{
+//     fn eq(&self, other: &Self) -> bool {
+        
+//     }
+// }
+// #[test]
+// fn toto(){
+//     let hash_set = HashSet::<Toto>::new();
+//     hash_set.insert(Toto{})
+// }

@@ -13,7 +13,8 @@ use serde_json::Map;
 use types::thread::{readonly, Readonly};
 
 use crate::definition::{
-    DefinitionDto, EnvironmentDto, NodeProcessorDto, TagDto,
+    DefinitionDto, EnvironmentDto, ForeignDefinitionDto, NodeProcessorDto, ProcessorOverrideDto,
+    TagDto,
 };
 
 impl DefinitionDto {
@@ -100,24 +101,41 @@ impl DefinitionDto {
                     .definition
                     .as_ref()
                     .map(|definition| {
-                        if let Some(definition) = chara.foreign_definitions.get(definition) {
+                        let key = definition.key();
+
+                        if let Some(definition) = chara.foreign_definitions.get(&key) {
                             Some(definition.clone())
                         } else {
-                            let definition_input = if path::Path::new(definition).exists() {
-                                Some(DefinitionInput::File(definition.clone()))
-                            } else if let Ok(content) = serde_json::from_str(definition) {
-                                Some(DefinitionInput::Value(content))
-                            } else if let Some(processor) = chara.processors.get(definition) {
-                                Some(DefinitionInput::Processor(processor.clone()))
-                            } else {
-                                None
+                            let definition_input = match definition {
+                                ForeignDefinitionDto::String(definition) => {
+                                    if path::Path::new(definition).exists() {
+                                        Some(DefinitionInput::File(definition.clone()))
+                                    } else if let Ok(content) = serde_json::from_str(definition) {
+                                        Some(DefinitionInput::Value(content))
+                                    } else if let Some(processor) = chara.processors.get(definition.trim_start_matches("#/"))
+                                    {
+                                        Some(DefinitionInput::Processor(
+                                            ProcessorOverride::processor(processor),
+                                        ))
+                                    } else {
+                                        None
+                                    }
+                                }
+                                ForeignDefinitionDto::Processor(processor_override) => {
+                                    map_processor_override(processor_override, chara).map(
+                                        |processor_override| {
+                                            DefinitionInput::Processor(processor_override)
+                                        },
+                                    )
+                                }
                             };
+
                             definition_input.map(|definition_input| {
                                 let foreign_definition =
                                     readonly(ForeignDefinition::input(definition_input));
                                 chara
                                     .foreign_definitions
-                                    .insert(definition.clone(), foreign_definition.clone());
+                                    .insert(key, foreign_definition.clone());
                                 foreign_definition
                             })
                         }
@@ -127,7 +145,10 @@ impl DefinitionDto {
                     key.clone(),
                     readonly(Edge {
                         definition,
-                        processor: edge.processor.as_ref().and_then(|processor| map_node_processor(&processor, &chara)),
+                        processor: edge
+                            .processor
+                            .as_ref()
+                            .and_then(|processor| map_node_processor(&processor, &chara)),
                         other: edge.other.clone(),
                     }),
                 )
@@ -166,9 +187,10 @@ impl DefinitionDto {
                             .flatten()
                             .collect(),
                         other: metadata.other.clone(),
-                        processor: metadata.processor.as_ref().and_then(|processor| {
-                            map_node_processor(processor, definition)
-                        }),
+                        processor: metadata
+                            .processor
+                            .as_ref()
+                            .and_then(|processor| map_node_processor(processor, definition)),
                     }),
                 )
             })
@@ -184,18 +206,27 @@ fn map_node_processor(
             .processors
             .get(reference)
             .map(|processor| ProcessorOverride::processor(processor)),
-        NodeProcessorDto::Processor(processor_override) => definition
-            .processors
-            .get(&processor_override.reference)
-            .map(|processor| ProcessorOverride {
-                arguments: map_arguments(&processor_override.arguments, &definition.arguments),
-                environments: map_environments(
-                    &processor_override.environments,
-                    &definition.environments,
-                ),
-                processor: processor.clone(),
-            }),
+        NodeProcessorDto::Processor(processor_override) => {
+            map_processor_override(processor_override, definition)
+        }
     }
+}
+
+fn map_processor_override(
+    processor_override: &ProcessorOverrideDto,
+    definition: &Definition,
+) -> Option<ProcessorOverride> {
+    definition
+        .processors
+        .get(&processor_override.reference)
+        .map(|processor| ProcessorOverride {
+            arguments: map_arguments(&processor_override.arguments, &definition.arguments),
+            environments: map_environments(
+                &processor_override.environments,
+                &definition.environments,
+            ),
+            processor: processor.clone(),
+        })
 }
 fn map_arguments(
     dto_arguments: &Vec<String>,

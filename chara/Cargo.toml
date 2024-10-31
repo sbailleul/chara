@@ -1,5 +1,5 @@
 [workspace]
-members = ["app",  "libs/engine", "libs/definitions", "libs/types"]
+members = ["app", "libs/engine", "libs/definitions", "libs/types"]
 
 [workspace.dependencies]
 definitions = { path = "libs/definitions" }

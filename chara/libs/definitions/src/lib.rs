@@ -6,37 +6,43 @@ use engine::{
     definition::{Definition, DefinitionInput, ProcessorContext},
     Definitions as ForeignDefinitions,
 };
-use serde_json::Error;
 mod cli;
-mod definition;
+pub mod definition;
 mod map;
 pub struct Definitions {}
 impl ForeignDefinitions for Definitions {
     fn get(&self, definition: &DefinitionInput) -> Option<Definition> {
-        let result = match definition {
-            DefinitionInput::File(path) => {
-                let file =
-                    File::open(path).expect(format!("File {} isn't readable", path).as_str());
-                let reader = BufReader::new(file);
-                serde_json::from_reader(reader).ok()
-            }
-            DefinitionInput::Text(content) => serde_json::from_str(&content).ok(),
-            DefinitionInput::Processor(processor) => processor.read().ok().and_then(|processor| {
-                processor
-                    .output_stdout()
-                    .and_then(|content| serde_json::from_str(&content).ok())
+        let definition = match definition {
+            DefinitionInput::File(path) => File::open(path)
+                .inspect_err(|err| println!("Cannot open [File: {path}] [Error: {err}]"))
+                .ok()
+                .and_then(|file| {
+                    serde_json::from_reader(BufReader::new(file))
+                        .inspect_err(|err| {
+                            println!("Cannot read json from [File:{path}] [Error: {err}]")
+                        })
+                        .ok()
+                }),
+            DefinitionInput::Text(content) => serde_json::from_str(&content)
+                .inspect_err(|err| println!("Cannot parse text definition {err}"))
+                .ok(),
+            DefinitionInput::Processor(processor) => processor.output_stdout().and_then(|stdout| {
+                serde_json::from_str(&stdout)
+                    .inspect_err(|err| println!("Cannot parse [Value:{stdout}] [Error: {err}]"))
+                    .ok()
             }),
-            DefinitionInput::Value(value) => serde_json::from_value(value.clone()).ok(),
+            DefinitionInput::Value(value) => serde_json::from_value(value.clone())
+                .inspect_err(|err| println!("Cannot parse [Value:{value}] [Error: {err}]"))
+                .ok(),
         };
-        let definition: DefinitionDto =
-            result.expect(format!("Format {:?} isn't valid", definition).as_str());
-        dbg!(&definition);
+        // dbg!(&result);
+        let definition: DefinitionDto = definition.expect("Cannot parse definition");
         Some(definition.map())
     }
 
     fn enrich(&self, context: &ProcessorContext) -> Option<Definition> {
         if let Some(output) = context.processor.output_stdout() {
-            dbg!(&output);
+            // dbg!(&output);
             // if let Some(install) = &processor.install {
             //     match install.command().output() {
             //         Ok(output) => {
