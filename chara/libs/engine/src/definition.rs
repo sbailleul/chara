@@ -1,5 +1,5 @@
 use serde_json::{Map, Value};
-use std::{collections::{HashMap, HashSet}, hash::{Hash, Hasher}, sync::Arc};
+use std::{collections::HashMap, hash::Hasher, sync::Arc};
 use types::thread::Readonly;
 
 use crate::contexts_dto::WritePermissionsDto;
@@ -42,6 +42,7 @@ pub struct Install {
     pub arguments: Vec<Argument>,
     pub program: String,
     pub environments: Vec<Environment>,
+    pub current_directory: Option<String>
 }
 
 #[derive(Debug)]
@@ -64,6 +65,7 @@ pub struct Processor {
     pub program: String,
     pub install: Option<Install>,
     pub environments: Vec<Environment>,
+    pub current_directory: Option<String>
 }
 
 #[derive(Debug, Clone)]

@@ -4,37 +4,66 @@ use std::{
 };
 
 use definition::{Definition, DefinitionInput, ProcessorContext};
-
+use types::ThreadError;
 pub mod cli;
 mod contexts_dto;
 pub mod definition;
 mod definition_test;
 
-pub trait Definitions: Send + Sync {
-    fn get(&self, definition: &DefinitionInput) -> Option<Definition>;
-    fn enrich(&self, context: &ProcessorContext) -> Option<Definition>;
+#[derive(Debug)]
+pub enum DefinitionError {
+    Parse(String),
+    Access(String),
+    Process(String),
+    Thread(ThreadError),
+    Cli(CliError),
 }
-pub fn run(chara: Definition, definitions: Arc<dyn Definitions>) {
-    chara
+#[derive(Debug)]
+pub enum CliError {
+    Thread(ThreadError),
+    PathNotFound(String),
+}
+#[derive(Debug)]
+enum Error {
+    Thread(ThreadError),
+    Process(DefinitionError),
+}
+pub trait Definitions: Send + Sync {
+    fn get(&self, definition: &DefinitionInput) -> Result<Definition, DefinitionError>;
+    fn enrich(&self, context: &ProcessorContext) -> Result<Definition, DefinitionError>;
+}
+
+pub fn run(definition: Definition, definitions: Arc<dyn Definitions>) {
+    definition
         .foreign_definitions
         .iter()
         .map(|definition| {
             let definition = definition.1.clone();
             let definitions = definitions.clone();
             thread::spawn(move || {
-                if let Ok(mut definition) = definition.write() {
-                    definition.output = definitions.get(&definition.input);
-                }
+                definition
+                    .write()
+                    .map_err(|_| Error::Thread(ThreadError::Poison))
+                    .and_then(|mut definition| {
+                        definitions
+                            .get(&definition.input)
+                            .map(|found_definition| definition.output = Some(found_definition))
+                            .or_else(|err| Err(Error::Process(err)))
+                    })
             })
         })
-        .for_each(|handler| handler.join().unwrap());
-    chara
+        .for_each(|handler| {
+            if let Ok(Err(err)) = handler.join() {
+                dbg!(&err);
+            }
+        });
+    definition
         .processors_contexts()
         .into_iter()
         .map(|context| {
             let definitions = definitions.clone();
             thread::spawn(move || {
-                definitions.enrich(&context);
+                let _ = definitions.enrich(&context);
             })
         })
         .for_each(|handler| handler.join().unwrap());

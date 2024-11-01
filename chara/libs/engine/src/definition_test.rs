@@ -18,6 +18,7 @@ mod definition {
             environments: vec![],
             install: None,
             program: "test_program".to_string(),
+            current_directory: None
         });
         let test_edge = readonly(Edge {
             definition: None,

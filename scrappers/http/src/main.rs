@@ -46,9 +46,9 @@ impl Args {
     }
 }
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), String>{
     let args = Args::parse();
-    match args.into_client() {
+    let _t = match args.into_client() {
         Ok(args) => {
             let client = Client::new();
             let resp = client
@@ -61,5 +61,6 @@ async fn main() {
             dbg!(resp);
         }
         Err(err) => {println!("{err}")},
-    }
+    };
+    Err("HGEGHZHZEGZEG".to_string())
 }

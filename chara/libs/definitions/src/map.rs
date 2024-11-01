@@ -1,5 +1,4 @@
-use core::hash;
-use std::{collections::HashMap, hash::Hash, path, sync::Arc};
+use std::{collections::HashMap, path, sync::Arc};
 
 use engine::{
     cli::{Argument, Environment},
@@ -81,11 +80,13 @@ impl DefinitionDto {
                                 &chara.environments,
                             ),
                             program: install.program.clone(),
+                            current_directory: install.current_directory.clone(),
                         }),
                         environments: map_environments(
                             &processor.environments,
                             &chara.environments,
                         ),
+                        current_directory: processor.current_directory.clone(),
                     }),
                 )
             })
@@ -112,7 +113,8 @@ impl DefinitionDto {
                                         Some(DefinitionInput::File(definition.clone()))
                                     } else if let Ok(content) = serde_json::from_str(definition) {
                                         Some(DefinitionInput::Value(content))
-                                    } else if let Some(processor) = chara.processors.get(definition.trim_start_matches("#/"))
+                                    } else if let Some(processor) =
+                                        chara.processors.get(definition.trim_start_matches("#/"))
                                     {
                                         Some(DefinitionInput::Processor(
                                             ProcessorOverride::processor(processor),

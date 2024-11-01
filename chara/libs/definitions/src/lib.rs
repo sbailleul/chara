@@ -1,47 +1,46 @@
-use std::{ffi::OsStr, fs::File, io::BufReader};
+use std::{fs::File, io::BufReader};
 
 use cli::Cli;
 use definition::DefinitionDto;
 use engine::{
     definition::{Definition, DefinitionInput, ProcessorContext},
-    Definitions as ForeignDefinitions,
+    DefinitionError, Definitions as ForeignDefinitions,
 };
 mod cli;
 pub mod definition;
 mod map;
+
 pub struct Definitions {}
 impl ForeignDefinitions for Definitions {
-    fn get(&self, definition: &DefinitionInput) -> Option<Definition> {
-        let definition = match definition {
+    fn get(&self, definition: &DefinitionInput) -> Result<Definition, DefinitionError> {
+        match definition {
             DefinitionInput::File(path) => File::open(path)
-                .inspect_err(|err| println!("Cannot open [File: {path}] [Error: {err}]"))
-                .ok()
+                .map_err(|err| {
+                    DefinitionError::Access(format!("Cannot open [File: {path}] [Error: {err}]"))
+                })
                 .and_then(|file| {
                     serde_json::from_reader(BufReader::new(file))
-                        .inspect_err(|err| {
-                            println!("Cannot read json from [File:{path}] [Error: {err}]")
-                        })
-                        .ok()
+                        .map_err(|err| DefinitionError::Parse(err.to_string()))
                 }),
-            DefinitionInput::Text(content) => serde_json::from_str(&content)
-                .inspect_err(|err| println!("Cannot parse text definition {err}"))
-                .ok(),
-            DefinitionInput::Processor(processor) => processor.output_stdout().and_then(|stdout| {
-                serde_json::from_str(&stdout)
-                    .inspect_err(|err| println!("Cannot parse [Value:{stdout}] [Error: {err}]"))
-                    .ok()
+            DefinitionInput::Text(content) => serde_json::from_str(&content).map_err(|err| {
+                DefinitionError::Parse(format!("Cannot parse text definition {err}"))
             }),
-            DefinitionInput::Value(value) => serde_json::from_value(value.clone())
-                .inspect_err(|err| println!("Cannot parse [Value:{value}] [Error: {err}]"))
-                .ok(),
-        };
-        // dbg!(&result);
-        let definition: DefinitionDto = definition.expect("Cannot parse definition");
-        Some(definition.map())
+            DefinitionInput::Processor(processor) => processor.output_stdout().and_then(|stdout| {
+                dbg!(&stdout);
+                serde_json::from_str(&stdout).map_err(|err| {
+                    DefinitionError::Parse(format!("Cannot parse [Value:{stdout}] [Error: {err}]"))
+                })
+            }),
+            DefinitionInput::Value(value) => serde_json::from_value(value.clone()).map_err(|err| {
+                DefinitionError::Parse(format!("Cannot parse [Value:{value}] [Error: {err}]"))
+            }),
+        }.map(DefinitionDto::map)
+
     }
 
-    fn enrich(&self, context: &ProcessorContext) -> Option<Definition> {
-        if let Some(output) = context.processor.output_stdout() {
+    fn enrich(&self, _context: &ProcessorContext) -> Result<Definition, DefinitionError> {
+        Err(DefinitionError::Process("".to_string()))
+        // if let Some(output) = context.processor.output_stdout() {
             // dbg!(&output);
             // if let Some(install) = &processor.install {
             //     match install.command().output() {
@@ -59,7 +58,7 @@ impl ForeignDefinitions for Definitions {
             //     print!("{:?}", &command.get_args().collect::<Vec<&OsStr>>());
             //     let _ = command.output().inspect_err(|err| print!("{err}"));
             // }
-        }
-        None
+        // }
+        // None
     }
 }

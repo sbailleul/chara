@@ -1,7 +1,10 @@
 use serde::Deserialize;
 use serde_json::{Map, Value};
 
-use std::{collections::HashMap, hash::{DefaultHasher, Hash, Hasher}};
+use std::{
+    collections::HashMap,
+    hash::{DefaultHasher, Hash, Hasher},
+};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct TagDto {
@@ -28,8 +31,8 @@ pub enum ForeignDefinitionDto {
     String(String),
     Processor(ProcessorOverrideDto),
 }
-impl ForeignDefinitionDto{
-    pub fn key(&self) -> String{
+impl ForeignDefinitionDto {
+    pub fn key(&self) -> String {
         let mut s = DefaultHasher::new();
         self.hash(&mut s);
         s.finish().to_string()
@@ -50,6 +53,8 @@ pub struct InstallDto {
     pub arguments: Vec<String>,
     #[serde(default)]
     pub environments: Vec<EnvironmentDto>,
+
+    pub current_directory: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -78,6 +83,7 @@ pub struct ProcessorDto {
     pub environments: Vec<EnvironmentDto>,
     pub program: String,
     pub install: Option<InstallDto>,
+    pub current_directory: Option<String>
 }
 #[derive(Debug, Deserialize, Hash)]
 pub struct ProcessorOverrideDto {

@@ -52,7 +52,8 @@
     },
     "http_client":{
       "program": "cargo",
-      "arguments":["run","--","../../scrappers/http"]
+      "currentDirectory": "../../scrappers/http",
+      "arguments":["run"]
     }
   },
   "arguments": {
