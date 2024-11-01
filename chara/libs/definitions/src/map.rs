@@ -68,6 +68,7 @@ impl DefinitionDto {
             .processors
             .iter()
             .map(|(key, processor)| {
+                dbg!(&processor);
                 (
                     key.clone(),
                     readonly(Processor {

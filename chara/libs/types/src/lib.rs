@@ -1,5 +1,8 @@
+use thiserror::Error;
+
 pub mod thread;
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ThreadError{
+    #[error("Poison error")]
     Poison
 }

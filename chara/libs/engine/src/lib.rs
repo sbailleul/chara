@@ -4,28 +4,39 @@ use std::{
 };
 
 use definition::{Definition, DefinitionInput, ProcessorContext};
+use log::{error, info};
+use thiserror::Error;
 use types::ThreadError;
 pub mod cli;
 mod contexts_dto;
 pub mod definition;
 mod definition_test;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum DefinitionError {
+    #[error("Parse error {0}")]
     Parse(String),
+    #[error("Access error {0}")]
     Access(String),
+    #[error("Process error {0}")]
     Process(String),
+    #[error("Thread error {0}")]
     Thread(ThreadError),
+    #[error("Cli error {0}")]
     Cli(CliError),
 }
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum CliError {
+    #[error("Thread error {0}")]
     Thread(ThreadError),
+    #[error("Path not found {0}")]
     PathNotFound(String),
 }
-#[derive(Debug)]
+#[derive(Debug, Error)]
 enum Error {
+    #[error("Thread error {0}")]
     Thread(ThreadError),
+    #[error("Process error {0}")]
     Process(DefinitionError),
 }
 pub trait Definitions: Send + Sync {
@@ -55,6 +66,8 @@ pub fn run(definition: Definition, definitions: Arc<dyn Definitions>) {
         .for_each(|handler| {
             if let Ok(Err(err)) = handler.join() {
                 dbg!(&err);
+                info!("COUCOU");
+                error!("{err}");
             }
         });
     definition

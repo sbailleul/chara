@@ -1,11 +1,12 @@
 use std::{collections::HashMap, fs::canonicalize, process::Command};
 
 use engine::{
-    cli::{Argument, Environment}, definition::{Install, Processor, ProcessorOverride}, CliError, DefinitionError
+    cli::{Argument, Environment},
+    definition::{Install, Processor, ProcessorOverride},
+    CliError, DefinitionError,
 };
+use log::info;
 use types::ThreadError;
-
-
 pub trait Inputs {
     fn arguments(&self) -> Vec<Argument>;
     fn environments(&self) -> Vec<Environment>;
@@ -35,13 +36,25 @@ pub trait Cli: Inputs {
                 let mut cmd = Command::new(program);
                 if let Some(current_directory) = self
                     .current_directory()
-                    .map_err(|err| CliError::Thread(err))?.as_ref()
+                    .map_err(|err| CliError::Thread(err))?
+                    .as_ref()
                 {
+                    info!("Current directory {current_directory}");
                     let current_directory = canonicalize(current_directory)
                         .map_err(|_| CliError::PathNotFound(current_directory.clone()))?;
                     cmd.current_dir(current_directory);
                 }
-
+                let arguments = self.flatten_arguments();
+                let environments = self.flatten_environments();
+                info!("Arguments {}", arguments.join(" "));
+                info!(
+                    "Environments {}",
+                    environments
+                        .iter()
+                        .map(|(k, v)| format!("{k}={v}"))
+                        .collect::<Vec<String>>()
+                        .join("\n")
+                );
                 cmd.args(self.flatten_arguments())
                     .envs(self.flatten_environments());
                 Ok(cmd)
@@ -54,8 +67,14 @@ pub trait Cli: Inputs {
                 cmd.output()
                     .map_err(|err| DefinitionError::Process(format!("{err}")))
                     .and_then(|output| {
-                        if output.stderr.len() > 0 {
-                            String::from_utf8(output.stdout)
+                        if output.status.success() {
+                            String::from_utf8(output.stdout).map_err(|err| {
+                                DefinitionError::Parse(format!(
+                                    "Cannot convert stdout to string [Error : {err}]"
+                                ))
+                            })
+                        } else {
+                            String::from_utf8(output.stderr)
                                 .map_err(|err| {
                                     dbg!(&err);
                                     DefinitionError::Parse(format!(
@@ -67,12 +86,6 @@ pub trait Cli: Inputs {
                                         "Processor execution failed [Error : {stderr}]"
                                     )))
                                 })
-                        } else {
-                            String::from_utf8(output.stdout).map_err(|err| {
-                                DefinitionError::Parse(format!(
-                                    "Cannot convert stdout to string [Error : {err}]"
-                                ))
-                            })
                         }
                     })
             })

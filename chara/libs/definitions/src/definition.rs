@@ -83,6 +83,7 @@ pub struct ProcessorDto {
     pub environments: Vec<EnvironmentDto>,
     pub program: String,
     pub install: Option<InstallDto>,
+    #[serde(rename(deserialize = "currentDirectory"))]
     pub current_directory: Option<String>
 }
 #[derive(Debug, Deserialize, Hash)]

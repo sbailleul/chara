@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 map-macro = { workspace = true }
 
+
 types={workspace = true}
 serde={workspace = true}
 serde_json={workspace = true}
+log={workspace=true}
+thiserror={workspace=true}
