@@ -2,12 +2,9 @@ use serde_json::{Map, Value};
 use std::{collections::HashMap, hash::Hasher, sync::Arc};
 use types::thread::Readonly;
 
-use crate::contexts_dto::WritePermissionsDto;
+use crate::contexts::{DefinitionContextDto, EdgeContext, ProcessorContext, WritePermissionsDto};
 
-use super::{
-    cli::{Argument, Environment},
-    contexts_dto::DefinitionContextDto,
-};
+use super::cli::{Argument, Environment};
 #[derive(Debug, PartialEq, Eq)]
 pub enum DefinitionInput {
     File(String),
@@ -42,7 +39,7 @@ pub struct Install {
     pub arguments: Vec<Argument>,
     pub program: String,
     pub environments: Vec<Environment>,
-    pub current_directory: Option<String>
+    pub current_directory: Option<String>,
 }
 
 #[derive(Debug)]
@@ -65,7 +62,7 @@ pub struct Processor {
     pub program: String,
     pub install: Option<Install>,
     pub environments: Vec<Environment>,
-    pub current_directory: Option<String>
+    pub current_directory: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -102,17 +99,6 @@ pub struct Definition {
     pub arguments: HashMap<String, Readonly<Vec<String>>>,
     pub environments: HashMap<String, Readonly<HashMap<String, String>>>,
     pub foreign_definitions: HashMap<String, Readonly<ForeignDefinition>>,
-}
-
-pub struct ProcessorContext {
-    pub definition: DefinitionContextDto,
-    pub processor: ProcessorOverride,
-}
-struct EdgeContext {
-    key: String,
-    value: Map<String, Value>,
-    definition: Option<Readonly<ForeignDefinition>>,
-    processor: ProcessorOverride,
 }
 
 impl Definition {
@@ -186,22 +172,3 @@ impl Definition {
         definition_contexts.flatten().flatten().collect()
     }
 }
-
-
-// struct Toto{
-
-// }
-// impl Hash for Toto {
-//     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-//     }
-// }
-// impl PartialEq for Toto{
-//     fn eq(&self, other: &Self) -> bool {
-        
-//     }
-// }
-// #[test]
-// fn toto(){
-//     let hash_set = HashSet::<Toto>::new();
-//     hash_set.insert(Toto{})
-// }

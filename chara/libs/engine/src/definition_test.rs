@@ -7,8 +7,7 @@ mod definition {
     use types::thread::readonly;
 
     use crate::{
-        contexts_dto::{DefinitionContextDto, WritePermissionsDto},
-        definition::{Definition, Edge, Metadata, Processor, ProcessorOverride},
+        contexts::{DefinitionContextDto, WritePermissionsDto}, definition::{Definition, Edge, Metadata, Processor, ProcessorOverride}
     };
 
     #[test]

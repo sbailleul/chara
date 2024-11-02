@@ -19,6 +19,7 @@ struct ClientArg {
     method: Method,
     url: Url,
 }
+
 enum ParseArgsError {
     ParseMethod(String),
     ParseUrl(String),
