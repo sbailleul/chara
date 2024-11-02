@@ -20,7 +20,13 @@
   },
   "edges": {
     "workflows": {
-      "definition": "#/http_client",
+      "definition": {
+        "reference": "#/http_client",
+        "arguments": [
+          "--url",
+          "https://sbailleul.github.io/chara_json/definition.json"
+        ]
+      },
       "processor": "#/reusable_workflow"
     },
     "stock": {
@@ -50,10 +56,9 @@
       "environments": ["#/github", { "HTTP_PROXY": "localhost:6018" }],
       "arguments": ["#/workflow"]
     },
-    "http_client":{
-      "program": "cargo",
-      "currentDirectory": "../../scrappers/http",
-      "arguments":["run"]
+    "http_client": {
+      "program": "./http",
+      "currentDirectory": "../../scrappers/http/target/debug"
     }
   },
   "arguments": {

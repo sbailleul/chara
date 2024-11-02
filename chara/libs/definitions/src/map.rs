@@ -68,7 +68,6 @@ impl DefinitionDto {
             .processors
             .iter()
             .map(|(key, processor)| {
-                dbg!(&processor);
                 (
                     key.clone(),
                     readonly(Processor {
@@ -125,11 +124,8 @@ impl DefinitionDto {
                                     }
                                 }
                                 ForeignDefinitionDto::Processor(processor_override) => {
-                                    map_processor_override(processor_override, chara).map(
-                                        |processor_override| {
-                                            DefinitionInput::Processor(processor_override)
-                                        },
-                                    )
+                                    map_processor_override(processor_override, chara)
+                                        .map(DefinitionInput::Processor)
                                 }
                             };
 
@@ -221,7 +217,7 @@ fn map_processor_override(
 ) -> Option<ProcessorOverride> {
     definition
         .processors
-        .get(&processor_override.reference)
+        .get(processor_override.reference.trim_start_matches("#/"))
         .map(|processor| ProcessorOverride {
             arguments: map_arguments(&processor_override.arguments, &definition.arguments),
             environments: map_environments(

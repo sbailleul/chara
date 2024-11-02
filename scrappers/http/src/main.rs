@@ -1,7 +1,7 @@
 use clap::Parser;
+use core::fmt;
 use definitions::definition::DefinitionDto;
 use reqwest::{Client, Method, Request, Url};
-use core::fmt;
 use std::{fmt::Formatter, str::FromStr};
 
 /// Simple program to greet a person
@@ -11,7 +11,7 @@ struct Args {
     /// Name of the person to greet
     #[arg(short, long)]
     url: String,
-    #[arg(short, long)]
+    #[arg(short, long, default_value = "GET")]
     method: String,
 }
 
@@ -23,7 +23,7 @@ enum ParseArgsError {
     ParseMethod(String),
     ParseUrl(String),
 }
-impl fmt::Display for ParseArgsError{
+impl fmt::Display for ParseArgsError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             ParseArgsError::ParseMethod(method) => write!(f, "[Method : {method}] isn't valid"),
@@ -35,7 +35,7 @@ impl fmt::Display for ParseArgsError{
 impl Args {
     pub fn into_client(self) -> Result<ClientArg, ParseArgsError> {
         if let Ok(method) = Method::from_str(&self.method) {
-            if let Ok(url) = Url::from_str(&self.method) {
+            if let Ok(url) = Url::from_str(&self.url) {
                 Ok(ClientArg { method, url })
             } else {
                 Err(ParseArgsError::ParseUrl(self.url.clone()))
@@ -46,21 +46,21 @@ impl Args {
     }
 }
 #[tokio::main]
-async fn main() -> Result<(), String>{
+async fn main() -> Result<(), String> {
     let args = Args::parse();
-    let _t = match args.into_client() {
+    match args.into_client() {
         Ok(args) => {
             let client = Client::new();
             let resp = client
                 .execute(Request::new(args.method, args.url))
                 .await
                 .unwrap()
-                .json::<DefinitionDto>()
+                .text()
                 .await
                 .unwrap();
-            dbg!(resp);
+            println!("{resp}");
+            Ok(())
         }
-        Err(err) => {println!("{err}")},
-    };
-    Err("HGEGHZHZEGZEG".to_string())
+        Err(err) => Err(err.to_string()),
+    }
 }

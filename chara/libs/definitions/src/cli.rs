@@ -129,15 +129,11 @@ impl Cli for Processor {
 
 impl Inputs for ProcessorOverride {
     fn arguments(&self) -> Vec<Argument> {
-        self.arguments
-            .clone()
+        self.processor
+            .read()
+            .map_or(vec![], |processor| processor.arguments())
             .into_iter()
-            .chain(
-                self.processor
-                    .read()
-                    .map_or(vec![], |processor| processor.arguments())
-                    .into_iter(),
-            )
+            .chain(self.arguments.clone().into_iter())
             .collect()
     }
 
