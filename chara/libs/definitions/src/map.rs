@@ -7,7 +7,7 @@ use engine::{
         ProcessorOverride, Tag,
     },
 };
-use serde_json::Map;
+use serde_json::{Map, Value};
 
 use types::thread::{readonly, Readonly};
 
@@ -15,7 +15,7 @@ use crate::definition::{
     DefinitionDto, EnvironmentDto, ForeignDefinitionDto, NodeProcessorDto, ProcessorOverrideDto,
     TagDto,
 };
-
+const REFERENCE_PREFIX: &str = "#/";
 impl DefinitionDto {
     fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {
         self.arguments
@@ -52,7 +52,7 @@ impl DefinitionDto {
             &readonly(Tag {
                 label: None,
                 tags: HashMap::new(),
-                other: Map::new(),
+                other: Value::Null,
             }),
             &"#".to_string(),
             &self.tags,
@@ -114,7 +114,7 @@ impl DefinitionDto {
                                     } else if let Ok(content) = serde_json::from_str(definition) {
                                         Some(DefinitionInput::Value(content))
                                     } else if let Some(processor) =
-                                        chara.processors.get(definition.trim_start_matches("#/"))
+                                        chara.processors.get(definition.trim_start_matches(REFERENCE_PREFIX))
                                     {
                                         Some(DefinitionInput::Processor(
                                             ProcessorOverride::processor(processor),
@@ -168,7 +168,7 @@ impl DefinitionDto {
                             .map(|program| {
                                 definition
                                     .edges
-                                    .get(program.trim_start_matches("#/"))
+                                    .get(program.trim_start_matches(REFERENCE_PREFIX))
                                     .cloned()
                                     .map(|edge| (program.clone(), edge))
                             })
@@ -203,7 +203,7 @@ fn map_node_processor(
     match node_processor {
         NodeProcessorDto::Reference(reference) => definition
             .processors
-            .get(reference)
+            .get(reference.trim_start_matches(REFERENCE_PREFIX))
             .map(|processor| ProcessorOverride::processor(processor)),
         NodeProcessorDto::Processor(processor_override) => {
             map_processor_override(processor_override, definition)
@@ -217,7 +217,7 @@ fn map_processor_override(
 ) -> Option<ProcessorOverride> {
     definition
         .processors
-        .get(processor_override.reference.trim_start_matches("#/"))
+        .get(processor_override.reference.trim_start_matches(REFERENCE_PREFIX))
         .map(|processor| ProcessorOverride {
             arguments: map_arguments(&processor_override.arguments, &definition.arguments),
             environments: map_environments(
@@ -234,9 +234,9 @@ fn map_arguments(
     dto_arguments
         .iter()
         .map(|program| {
-            if program.starts_with("#/") {
+            if program.starts_with(REFERENCE_PREFIX) {
                 arguments
-                    .get(program.trim_start_matches("#/"))
+                    .get(program.trim_start_matches(REFERENCE_PREFIX))
                     .map(|v| v.clone())
                     .map(|reference| Argument::Reference(reference))
             } else {
@@ -254,7 +254,7 @@ fn map_environments(
         .iter()
         .map(|environment| match environment {
             EnvironmentDto::Reference(program) => environments
-                .get(program.trim_start_matches("#/"))
+                .get(program.trim_start_matches(REFERENCE_PREFIX))
                 .map(|v| Environment::Reference(v.clone())),
             EnvironmentDto::Value(hash_map) => Some(Environment::Value(hash_map.clone())),
         })

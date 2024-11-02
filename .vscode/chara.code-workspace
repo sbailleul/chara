@@ -17,6 +17,10 @@
 		{
 			"name": "scrapper_http",
 			"path": "../scrappers/http"
+		},
+		{
+			"name": "scrapper_github",
+			"path": "../scrappers/github"
 		}
 	]
 }

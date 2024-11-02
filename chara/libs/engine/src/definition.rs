@@ -3,7 +3,6 @@ use std::{collections::HashMap, hash::Hasher, sync::Arc};
 use types::thread::Readonly;
 
 use crate::contexts::{DefinitionContextDto, EdgeContext, ProcessorContext, WritePermissionsDto};
-
 use super::cli::{Argument, Environment};
 #[derive(Debug, PartialEq, Eq)]
 pub enum DefinitionInput {
@@ -17,13 +16,13 @@ pub enum DefinitionInput {
 pub struct Tag {
     pub label: Option<String>,
     pub tags: HashMap<String, Readonly<Tag>>,
-    pub other: Map<String, Value>,
+    pub other: Value,
 }
 #[derive(Debug)]
 pub struct Metadata {
     pub edges: HashMap<String, Readonly<Edge>>,
     pub tags: HashMap<String, Readonly<Tag>>,
-    pub other: Map<String, Value>,
+    pub other: Value,
     pub processor: Option<ProcessorOverride>,
 }
 
@@ -31,7 +30,7 @@ pub struct Metadata {
 pub struct Edge {
     pub definition: Option<Readonly<ForeignDefinition>>,
     pub processor: Option<ProcessorOverride>,
-    pub other: Map<String, Value>,
+    pub other: Value,
 }
 
 #[derive(Debug)]

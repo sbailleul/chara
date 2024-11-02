@@ -8,7 +8,7 @@ use engine::{
 mod cli;
 pub mod definition;
 mod map;
-
+pub use engine::contexts::DefinitionContextDto;
 pub struct Definitions {}
 impl ForeignDefinitions for Definitions {
     fn get(&self, definition: &DefinitionInput) -> Result<Definition, DefinitionError> {
@@ -37,7 +37,8 @@ impl ForeignDefinitions for Definitions {
         .map(DefinitionDto::map)
     }
 
-    fn enrich(&self, _context: &ProcessorContext) -> Result<Definition, DefinitionError> {
+    fn enrich(&self, context: &ProcessorContext) -> Result<Definition, DefinitionError> {
+        dbg!(&context);
         Err(DefinitionError::Process("".to_string()))
         // if let Some(output) = context.processor.output_stdout() {
         // dbg!(&output);

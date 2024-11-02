@@ -27,7 +27,7 @@
           "https://sbailleul.github.io/chara_json/definition.json"
         ]
       },
-      "processor": "#/reusable_workflow"
+      "processor": "#/github"
     },
     "stock": {
       "definition": "https://github/book-club/stock/chara.json"
@@ -47,8 +47,8 @@
     }
   },
   "processors": {
-    "reusable_workflow": {
-      "program": "github-processor",
+    "github": {
+      "program": "github",
       "install": {
         "program": "echo",
         "arguments": ["Hello world"]

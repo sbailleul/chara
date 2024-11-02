@@ -3,11 +3,12 @@ mod definition {
     use std::{collections::HashMap, sync::Arc};
 
     use map_macro::hash_map;
-    use serde_json::Map;
+    use serde_json::{Map, Value};
     use types::thread::readonly;
 
     use crate::{
-        contexts::{DefinitionContextDto, WritePermissionsDto}, definition::{Definition, Edge, Metadata, Processor, ProcessorOverride}
+        contexts::{DefinitionContextDto, WritePermissionsDto},
+        definition::{Definition, Edge, Metadata, Processor, ProcessorOverride},
     };
 
     #[test]
@@ -17,18 +18,18 @@ mod definition {
             environments: vec![],
             install: None,
             program: "test_program".to_string(),
-            current_directory: None
+            current_directory: None,
         });
         let test_edge = readonly(Edge {
             definition: None,
             processor: Some(ProcessorOverride::processor(&reused_processor)),
-            other: Map::new(),
+            other: serde_json::Value::Null,
         });
         let test_metadata = readonly(Metadata {
             edges: hash_map! {"test_edge".to_string() => test_edge.clone()},
             processor: Some(ProcessorOverride::processor(&reused_processor)),
             tags: HashMap::new(),
-            other: Map::new(),
+            other: serde_json::Value::Null,
         });
 
         let definition = Definition {
@@ -47,8 +48,8 @@ mod definition {
         assert_eq!(contexts.len(), 1);
         let expected_definition = DefinitionContextDto {
             write: WritePermissionsDto::both(),
-            edge: Some(("test_edge".to_string(), Map::new())),
-            metadata: ("test_metadata".to_string(), Map::new()),
+            edge: Some(("test_edge".to_string(), Value::Null)),
+            metadata: ("test_metadata".to_string(), Value::Null),
         };
         assert_eq!(contexts[0].definition, expected_definition);
         assert!(Arc::ptr_eq(

@@ -1,21 +1,23 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use types::thread::Readonly;
 
 use crate::definition::{ForeignDefinition, ProcessorOverride};
 
+#[derive(Debug)]
 pub struct ProcessorContext {
     pub definition: DefinitionContextDto,
     pub processor: ProcessorOverride,
 }
+#[derive(Debug)]
 pub(crate) struct EdgeContext {
     pub key: String,
-    pub value: Map<String, Value>,
+    pub value: Value,
     pub definition: Option<Readonly<ForeignDefinition>>,
     pub processor: ProcessorOverride,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct WritePermissionsDto {
     pub metadata: bool,
@@ -43,10 +45,10 @@ impl WritePermissionsDto {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct DefinitionContextDto {
     pub write: WritePermissionsDto,
-    pub metadata: (String, Map<String, Value>),
-    pub edge: Option<(String, Map<String, Value>)>,
+    pub metadata: (String, Value),
+    pub edge: Option<(String, Value)>,
 }

@@ -12,7 +12,7 @@ pub struct TagDto {
     #[serde(default)]
     pub tags: HashMap<String, TagDto>,
     #[serde(flatten)]
-    pub other: Map<String, Value>,
+    pub other: Value,
 }
 
 #[derive(Debug, Deserialize)]
@@ -22,7 +22,7 @@ pub struct MetadataDto {
     #[serde(default)]
     pub tags: Vec<String>,
     #[serde(flatten)]
-    pub other: Map<String, Value>,
+    pub other: Value,
     pub processor: Option<NodeProcessorDto>,
 }
 #[derive(Debug, Deserialize, Hash)]
@@ -43,7 +43,7 @@ pub struct EdgeDto {
     pub definition: Option<ForeignDefinitionDto>,
     pub processor: Option<NodeProcessorDto>,
     #[serde(flatten)]
-    pub other: Map<String, Value>,
+    pub other: Value,
 }
 
 #[derive(Debug, Deserialize)]

@@ -14,6 +14,7 @@ pub mod definition;
 mod definition_test;
 pub mod errors;
 
+
 pub trait Definitions: Send + Sync {
     fn get(&self, definition: &DefinitionInput) -> Result<Definition, DefinitionError>;
     fn enrich(&self, context: &ProcessorContext) -> Result<Definition, DefinitionError>;
@@ -43,8 +44,10 @@ pub fn run(definition: Definition, definitions: Arc<dyn Definitions>) {
                 error!("{err}");
             }
         });
-    definition
-        .processors_contexts()
+    let contexts = definition
+        .processors_contexts();
+    dbg!(&contexts);
+    contexts
         .into_iter()
         .map(|context| {
             let definitions = definitions.clone();
