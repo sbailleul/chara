@@ -1,64 +1,74 @@
-use std::{fs::File, io::BufReader};
+use std::{
+    fs::{canonicalize, File},
+    io::BufReader,
+};
 
 use cli::Cli;
 use definition::DefinitionDto;
 use engine::{
-    contexts::ProcessorContext, definition::{Definition, DefinitionInput}, errors::DefinitionError, Definitions as ForeignDefinitions
+    contexts::ProcessorContext,
+    definition::{Definition, DefinitionInput},
+    errors::DefinitionError,
+    Definitions as ForeignDefinitions,
 };
 mod cli;
 pub mod definition;
 mod map;
-pub use engine::contexts::DefinitionContextDto;
+pub use engine::contexts::{DefinitionContextDto, WritePermissionsDto};
+use log::info;
+use types::ThreadError;
 pub struct Definitions {}
 impl ForeignDefinitions for Definitions {
-    fn get(&self, definition: &DefinitionInput) -> Result<Definition, DefinitionError> {
-        match definition {
-            DefinitionInput::File(path) => File::open(path)
-                .map_err(|err| {
-                    DefinitionError::Access(format!("Cannot open [File: {path}] [Error: {err}]"))
-                })
-                .and_then(|file| {
-                    serde_json::from_reader(BufReader::new(file))
-                        .map_err(|err| DefinitionError::Parse(err.to_string()))
-                }),
-            DefinitionInput::Text(content) => serde_json::from_str(&content).map_err(|err| {
-                DefinitionError::Parse(format!("Cannot parse text definition {err}"))
-            }),
-            DefinitionInput::Processor(processor) => processor.output_stdout().and_then(|stdout| {
-                dbg!(&stdout);
-                serde_json::from_str(&stdout).map_err(|err| {
-                    DefinitionError::Parse(format!("Cannot parse [Value:{stdout}] [Error: {err}]"))
-                })
-            }),
-            DefinitionInput::Value(value) => serde_json::from_value(value.clone()).map_err(|err| {
-                DefinitionError::Parse(format!("Cannot parse [Value:{value}] [Error: {err}]"))
-            }),
+    fn get(&self, input: &DefinitionInput) -> Result<Definition, DefinitionError> {
+        let mut location = None;
+        match input {
+            DefinitionInput::File(path) => {
+                File::open(path)
+                    .map_err(DefinitionError::IO)
+                    .and_then(|file| {
+                        let absolute_location = canonicalize(path)
+                            .map_err(DefinitionError::IO)
+                            .and_then(|absolute_location| {
+                                absolute_location
+                                    .to_str()
+                                    .map(|absolute_location| absolute_location.to_string())
+                                    .ok_or(DefinitionError::InvalidLocation(path.clone()))
+                            })?;
+                        location = Some(absolute_location);
+                        serde_json::from_reader(BufReader::new(file)).map_err(DefinitionError::Json)
+                    })
+            }
+            DefinitionInput::Text(content) => {
+                serde_json::from_str(&content).map_err(DefinitionError::Json)
+            }
+            DefinitionInput::Processor(processor) => processor
+                .output_stdout(None)
+                .and_then(|stdout| serde_json::from_str(&stdout).map_err(DefinitionError::Json)),
+            DefinitionInput::Value(value) => {
+                serde_json::from_value(value.clone()).map_err(DefinitionError::Json)
+            }
         }
-        .map(DefinitionDto::map)
+        .map(|dto| DefinitionDto::map(dto, location))
     }
 
     fn enrich(&self, context: &ProcessorContext) -> Result<Definition, DefinitionError> {
-        dbg!(&context);
-        Err(DefinitionError::Process("".to_string()))
-        // if let Some(output) = context.processor.output_stdout() {
-        // dbg!(&output);
-        // if let Some(install) = &processor.install {
-        //     match install.command().output() {
-        //         Ok(output) => {
-        //             if let Ok(stdout) = String::from_utf8(output.stdout) {
-        //                 print!("{stdout}");
-        //             }
-        //         }
-        //         Err(_) => todo!(),
-        //     }
-        // }
-        // if let Ok(serialized_context) = serde_json::to_string(&context.definition) {
-        //     let mut command = processor.command();
-        //     command.args(vec!["--context".to_string(), serialized_context]);
-        //     print!("{:?}", &command.get_args().collect::<Vec<&OsStr>>());
-        //     let _ = command.output().inspect_err(|err| print!("{err}"));
-        // }
-        // }
-        // None
+        context
+            .processor
+            .processor
+            .read()
+            .or(Err(DefinitionError::Thread(ThreadError::Poison)))
+            .and_then(|processor| {
+                if let Some(install) = &processor.install {
+                    info!("Run installation");
+                    let install_output = install.output_stdout(None)?;
+                    info!("Installation done : {install_output}");
+                }
+                let context =
+                    serde_json::to_string(&context.definition).map_err(DefinitionError::Json)?;
+
+                processor
+                    .output_stdout(Some(vec!["--context".to_string(), context]))
+                    .and_then(|output| self.get(&DefinitionInput::Text(output)))
+            })
     }
 }

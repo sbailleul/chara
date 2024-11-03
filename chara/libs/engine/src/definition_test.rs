@@ -3,11 +3,11 @@ mod definition {
     use std::{collections::HashMap, sync::Arc};
 
     use map_macro::hash_map;
-    use serde_json::{Map, Value};
+    use serde_json::Value;
     use types::thread::readonly;
 
     use crate::{
-        contexts::{DefinitionContextDto, WritePermissionsDto},
+        contexts::{ContextDto, DefinitionContextDto, WritePermissionsDto},
         definition::{Definition, Edge, Metadata, Processor, ProcessorOverride},
     };
 
@@ -33,6 +33,7 @@ mod definition {
         });
 
         let definition = Definition {
+            location: None,
             name: "Test".to_string(),
             metadata: hash_map! {
                 "test_metadata".to_string() => test_metadata
@@ -47,9 +48,10 @@ mod definition {
         let contexts = definition.processors_contexts();
         assert_eq!(contexts.len(), 1);
         let expected_definition = DefinitionContextDto {
+            location: None,
             write: WritePermissionsDto::both(),
-            edge: Some(("test_edge".to_string(), Value::Null)),
-            metadata: ("test_metadata".to_string(), Value::Null),
+            edge: Some(ContextDto::new("test_edge".to_string(), Value::Null)),
+            metadata: ContextDto::new("test_metadata".to_string(), Value::Null),
         };
         assert_eq!(contexts[0].definition, expected_definition);
         assert!(Arc::ptr_eq(

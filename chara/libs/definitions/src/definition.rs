@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use serde_json::{Map, Value};
+use serde_json::Value;
 
 use std::{
     collections::HashMap,
@@ -53,7 +53,7 @@ pub struct InstallDto {
     pub arguments: Vec<String>,
     #[serde(default)]
     pub environments: Vec<EnvironmentDto>,
-
+    #[serde(rename(deserialize = "currentDirectory"))]
     pub current_directory: Option<String>,
 }
 

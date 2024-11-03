@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
+use serde_json::Value;
 use types::thread::Readonly;
 
 use crate::definition::{ForeignDefinition, ProcessorOverride};
@@ -44,11 +44,24 @@ impl WritePermissionsDto {
         }
     }
 }
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct ContextDto {
+    pub name: String,
+    pub value: Value,
+}
+
+impl ContextDto {
+    pub fn new(name: String, value: Value) -> Self {
+        Self { name, value }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct DefinitionContextDto {
+    pub location: Option<String>,
     pub write: WritePermissionsDto,
-    pub metadata: (String, Value),
-    pub edge: Option<(String, Value)>,
+    pub metadata: ContextDto,
+    pub edge: Option<ContextDto>,
 }

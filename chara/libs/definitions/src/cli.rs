@@ -2,7 +2,8 @@ use std::{collections::HashMap, fs::canonicalize, process::Command};
 
 use engine::{
     cli::{Argument, Environment},
-    definition::{Install, Processor, ProcessorOverride}, errors::{CliError, DefinitionError},
+    definition::{Install, Processor, ProcessorOverride},
+    errors::DefinitionError,
 };
 use log::info;
 use types::ThreadError;
@@ -26,68 +27,64 @@ pub trait Inputs {
 }
 
 pub trait Cli: Inputs {
-    fn program(&self) -> Result<String, ThreadError>;
-    fn current_directory(&self) -> Result<Option<String>, ThreadError>;
-    fn command(&self) -> Result<Command, CliError> {
-        self.program()
-            .map_err(|err| CliError::Thread(err))
-            .and_then(|program| {
-                let mut cmd = Command::new(program);
-                if let Some(current_directory) = self
-                    .current_directory()
-                    .map_err(|err| CliError::Thread(err))?
-                    .as_ref()
-                {
-                    info!("Current directory {current_directory}");
-                    let current_directory = canonicalize(current_directory)
-                        .map_err(|_| CliError::PathNotFound(current_directory.clone()))?;
-                    cmd.current_dir(current_directory);
-                }
-                let arguments = self.flatten_arguments();
-                let environments = self.flatten_environments();
-                info!("Arguments {}", arguments.join(" "));
-                info!(
-                    "Environments {}",
-                    environments
-                        .iter()
-                        .map(|(k, v)| format!("{k}={v}"))
-                        .collect::<Vec<String>>()
-                        .join("\n")
-                );
-                cmd.args(self.flatten_arguments())
-                    .envs(self.flatten_environments());
-                Ok(cmd)
-            })
+    fn program(&self) -> Result<String, DefinitionError>;
+    fn current_directory(&self) -> Result<Option<String>, DefinitionError>;
+    fn command(
+        &self,
+        additional_arguments: Option<Vec<String>>,
+    ) -> Result<Command, DefinitionError> {
+        self.program().and_then(|program| {
+            let mut cmd = Command::new(&program);
+            info!("Run program {program}");
+            if let Some(current_directory) = self.current_directory()?.as_ref() {
+                info!("Current directory {current_directory}");
+                let current_directory =
+                    canonicalize(current_directory).map_err(DefinitionError::IO)?;
+                cmd.current_dir(current_directory);
+            }else{
+                info!("No current directory")
+            }
+            let additional_arguments=  additional_arguments.unwrap_or(vec![]);
+            cmd.args(&additional_arguments);
+            let arguments = [self.flatten_arguments(), additional_arguments].concat();
+            let environments = self.flatten_environments();
+            info!("Arguments {}", arguments.join(" "));
+            info!(
+                "Environments {}",
+                environments
+                    .iter()
+                    .map(|(k, v)| format!("{k}={v}"))
+                    .collect::<Vec<String>>()
+                    .join("\n")
+            );
+            cmd.args(self.flatten_arguments())
+                .envs(self.flatten_environments());
+            Ok(cmd)
+        })
     }
-    fn output_stdout(&self) -> Result<String, DefinitionError> {
-        self.command()
-            .map_err(|err| DefinitionError::Cli(err))
-            .and_then(|mut cmd| {
-                cmd.output()
-                    .map_err(|err| DefinitionError::Process(format!("{err}")))
-                    .and_then(|output| {
-                        if output.status.success() {
-                            String::from_utf8(output.stdout).map_err(|err| {
-                                DefinitionError::Parse(format!(
-                                    "Cannot convert stdout to string [Error : {err}]"
-                                ))
+    fn output_stdout(
+        &self,
+        additional_arguments: Option<Vec<String>>,
+    ) -> Result<String, DefinitionError> {
+        self.command(additional_arguments).and_then(|mut cmd| {
+            cmd.output()
+                .map_err(DefinitionError::IO)
+                .and_then(|output| {
+                    if output.status.success() {
+                        String::from_utf8(output.stdout).map_err(DefinitionError::ParseUtf8).inspect(|stdout| {
+                            info!("Stdout {stdout}");
+                        })
+                    } else {
+                        String::from_utf8(output.stderr)
+                            .map_err(DefinitionError::ParseUtf8)
+                            .and_then(|stderr| {
+                                Err(DefinitionError::Process(format!(
+                                    "Processor execution failed [Error : {stderr}]"
+                                )))
                             })
-                        } else {
-                            String::from_utf8(output.stderr)
-                                .map_err(|err| {
-                                    dbg!(&err);
-                                    DefinitionError::Parse(format!(
-                                        "Cannot convert stderr to string [Error : {err}]"
-                                    ))
-                                })
-                                .and_then(|stderr| {
-                                    Err(DefinitionError::Process(format!(
-                                        "Processor execution failed [Error : {stderr}]"
-                                    )))
-                                })
-                        }
-                    })
-            })
+                    }
+                })
+        })
     }
 }
 
@@ -100,10 +97,10 @@ impl Inputs for Install {
     }
 }
 impl Cli for Install {
-    fn program(&self) -> Result<String, ThreadError> {
+    fn program(&self) -> Result<String, DefinitionError> {
         Ok(self.program.clone())
     }
-    fn current_directory(&self) -> Result<Option<String>, ThreadError> {
+    fn current_directory(&self) -> Result<Option<String>, DefinitionError> {
         Ok(self.current_directory.clone())
     }
 }
@@ -117,11 +114,11 @@ impl Inputs for Processor {
     }
 }
 impl Cli for Processor {
-    fn program(&self) -> Result<String, ThreadError> {
+    fn program(&self) -> Result<String, DefinitionError> {
         Ok(self.program.clone())
     }
 
-    fn current_directory(&self) -> Result<Option<String>, ThreadError> {
+    fn current_directory(&self) -> Result<Option<String>, DefinitionError> {
         Ok(self.current_directory.clone())
     }
 }
@@ -150,17 +147,17 @@ impl Inputs for ProcessorOverride {
     }
 }
 impl Cli for ProcessorOverride {
-    fn program(&self) -> Result<String, ThreadError> {
+    fn program(&self) -> Result<String, DefinitionError> {
         self.processor
             .read()
-            .or(Err(ThreadError::Poison))
+            .or(Err(DefinitionError::Thread(ThreadError::Poison)))
             .and_then(|processor| processor.program())
     }
 
-    fn current_directory(&self) -> Result<Option<String>, ThreadError> {
+    fn current_directory(&self) -> Result<Option<String>, DefinitionError> {
         self.processor
             .read()
             .map(|processor| processor.current_directory.clone())
-            .or(Err(ThreadError::Poison))
+            .or(Err(DefinitionError::Thread(ThreadError::Poison)))
     }
 }

@@ -1,9 +1,11 @@
-use serde_json::{Map, Value};
+use serde_json::Value;
 use std::{collections::HashMap, hash::Hasher, sync::Arc};
 use types::thread::Readonly;
 
-use crate::contexts::{DefinitionContextDto, EdgeContext, ProcessorContext, WritePermissionsDto};
 use super::cli::{Argument, Environment};
+use crate::contexts::{
+    ContextDto, DefinitionContextDto, EdgeContext, ProcessorContext, WritePermissionsDto,
+};
 #[derive(Debug, PartialEq, Eq)]
 pub enum DefinitionInput {
     File(String),
@@ -91,6 +93,7 @@ impl Eq for ProcessorOverride {}
 #[derive(Debug)]
 pub struct Definition {
     pub name: String,
+    pub location: Option<String>,
     pub metadata: HashMap<String, Readonly<Metadata>>,
     pub edges: HashMap<String, Readonly<Edge>>,
     pub tags: HashMap<String, Readonly<Tag>>,
@@ -123,9 +126,16 @@ impl Definition {
                     .map(|edge_context| {
                         let context_without_metadata = ProcessorContext {
                             definition: DefinitionContextDto {
-                                metadata: (metadata_key.clone(), metadata_lock.other.clone()),
+                                location: self.location.clone(),
+                                metadata: ContextDto::new(
+                                    metadata_key.clone(),
+                                    metadata_lock.other.clone(),
+                                ),
                                 write: WritePermissionsDto::edge(),
-                                edge: Some((edge_context.key.clone(), edge_context.value.clone())),
+                                edge: Some(ContextDto::new(
+                                    edge_context.key.clone(),
+                                    edge_context.value.clone(),
+                                )),
                             },
                             processor: edge_context.processor.clone(),
                         };
@@ -133,8 +143,12 @@ impl Definition {
                             if processor == edge_context.processor {
                                 ProcessorContext {
                                     definition: DefinitionContextDto {
-                                        edge: Some((edge_context.key, edge_context.value)),
-                                        metadata: (
+                                        location: self.location.clone(),
+                                        edge: Some(ContextDto::new(
+                                            edge_context.key,
+                                            edge_context.value,
+                                        )),
+                                        metadata: ContextDto::new(
                                             metadata_key.clone(),
                                             metadata_lock.other.clone(),
                                         ),
@@ -157,8 +171,12 @@ impl Definition {
                     if let Some(processor) = metadata_lock.processor.clone() {
                         processor_contexts.push(ProcessorContext {
                             definition: DefinitionContextDto {
+                                location: self.location.clone(),
                                 edge: None,
-                                metadata: (metadata_key.clone(), metadata_lock.other.clone()),
+                                metadata: ContextDto::new(
+                                    metadata_key.clone(),
+                                    metadata_lock.other.clone(),
+                                ),
                                 write: WritePermissionsDto::metadata(),
                             },
                             processor: processor.clone(),

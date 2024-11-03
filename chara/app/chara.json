@@ -48,20 +48,27 @@
   },
   "processors": {
     "github": {
-      "program": "github",
-      "install": {
-        "program": "echo",
-        "arguments": ["Hello world"]
-      },
+      "program": "./github",
+      "currentDirectory": "../../scrappers/target/debug",
       "environments": ["#/github", { "HTTP_PROXY": "localhost:6018" }],
-      "arguments": ["#/workflow"]
+      "arguments": ["#/workflow"],
+      "install": {
+        "currentDirectory": "../../scrappers/github",
+        "program": "cargo",
+        "arguments": ["build"]
+      }
     },
     "http_client": {
       "program": "./http",
-      "currentDirectory": "../../scrappers/http/target/debug"
+      "currentDirectory": "../../scrappers/target/debug",
+      "install": {
+        "currentDirectory": "../../scrappers/http",
+        "program": "cargo",
+        "arguments": ["build"]
+      }
     }
   },
   "arguments": {
-    "workflow": ["-h"]
+    "workflow": []
   }
 }

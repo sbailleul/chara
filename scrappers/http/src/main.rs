@@ -1,6 +1,5 @@
 use clap::Parser;
 use core::fmt;
-use definitions::definition::DefinitionDto;
 use reqwest::{Client, Method, Request, Url};
 use std::{fmt::Formatter, str::FromStr};
 

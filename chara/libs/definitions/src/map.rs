@@ -7,7 +7,7 @@ use engine::{
         ProcessorOverride, Tag,
     },
 };
-use serde_json::{Map, Value};
+use serde_json::Value;
 
 use types::thread::{readonly, Readonly};
 
@@ -29,8 +29,9 @@ impl DefinitionDto {
             .map(|(key, value)| (key.clone(), readonly(value.clone())))
             .collect()
     }
-    pub fn map(self) -> Definition {
+    pub fn map(self, location: Option<String>) -> Definition {
         let mut definition = Definition {
+            location,
             name: self.name.clone(),
             arguments: self.arguments(),
             environments: self.environments(),

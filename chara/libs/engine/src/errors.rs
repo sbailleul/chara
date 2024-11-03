@@ -1,30 +1,23 @@
+
+use std::string::FromUtf8Error;
+
 use thiserror::Error;
 use types::ThreadError;
 
 #[derive(Debug, Error)]
 pub enum DefinitionError {
-    #[error("Parse error {0}")]
-    Parse(String),
-    #[error("Access error {0}")]
-    Access(String),
+    #[error("Parse json error {0}")]
+    Json(serde_json::Error),
+    #[error("Parse utf8 {0}")]
+    ParseUtf8(FromUtf8Error),
+    #[error("File error {0}")]
+    IO(std::io::Error),
     #[error("Process error {0}")]
     Process(String),
     #[error("Thread error {0}")]
     Thread(ThreadError),
     #[error("Cli error {0}")]
-    Cli(CliError),
-}
-#[derive(Debug, Error)]
-pub enum CliError {
-    #[error("Thread error {0}")]
-    Thread(ThreadError),
-    #[error("Path not found {0}")]
-    PathNotFound(String),
-}
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("Thread error {0}")]
-    Thread(ThreadError),
-    #[error("Process error {0}")]
-    Process(DefinitionError),
+    Cli(String),
+    #[error("Definition location is invalid {0}")]
+    InvalidLocation(String)
 }
