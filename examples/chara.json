@@ -3,19 +3,12 @@
   "name": "library",
   "metadata": {
     "build": {
-      "tags": ["#/CI/workflows/build"],
+      "private": ["#/CI/workflows/build"],
       "edges": ["#/workflows"],
       "file": "./.github/workflows/build-workflow.yaml",
+      "repository": "chara_private",
+      "owner": "sbailleul",
       "processor": "#/reusable_workflow"
-    },
-    "quality": {
-      "tags": ["#/CI/workflow/build"],
-      "edges": ["#/workflows"],
-      "file": "./.github/workflows/quality-workflow.yaml"
-    },
-    "functional": {
-      "purpose": "Sell books to customers",
-      "edges": ["#/stock"]
     }
   },
   "edges": {
@@ -24,7 +17,7 @@
         "reference": "#/http_client",
         "arguments": [
           "--url",
-          "https://sbailleul.github.io/chara_json/definition.json"
+          "https://sbailleul.github.io/chara_public/definition.json"
         ]
       },
       "processor": "#/github"
@@ -69,6 +62,13 @@
     }
   },
   "arguments": {
-    "workflow": []
+    "workflow": [
+      "--app-id",
+      "1049213",
+      "--installation-id",
+      "56895978",
+      "--private-key",
+      "/home/sbailleul/code/chara/examples/chara-github-scrapper.2024-11-07.private-key.pem"
+    ]
   }
 }

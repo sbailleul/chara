@@ -15,12 +15,24 @@
 			"path": "../"
 		},
 		{
+			"name": "examples",
+			"path": "../examples"
+		},
+		{
 			"name": "scrapper_http",
 			"path": "../scrappers/http"
 		},
 		{
 			"name": "scrapper_github",
 			"path": "../scrappers/github"
+		},
+		{
+			"name": "private",
+			"path": "../../chara_private"
+		},
+		{
+			"name": "public",
+			"path": "../../chara_public"
 		}
 	]
 }

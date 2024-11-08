@@ -513,6 +513,7 @@ dependencies = [
  "clap",
  "colog",
  "definitions",
+ "jsonwebtoken",
  "log",
  "octocrab",
  "serde",

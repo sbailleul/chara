@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use serde_json::Value;
+pub use engine::contexts::{DefinitionContextDto, WritePermissionsDto};
 
 use std::{
     collections::HashMap,
@@ -105,6 +106,7 @@ pub enum NodeProcessorDto {
 #[derive(Deserialize, Debug)]
 pub struct DefinitionDto {
     pub name: String,
+    pub location: Option<String>,
     #[serde(default)]
     pub metadata: HashMap<String, MetadataDto>,
     #[serde(default)]

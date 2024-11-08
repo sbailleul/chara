@@ -14,7 +14,6 @@ use engine::{
 mod cli;
 pub mod definition;
 mod map;
-pub use engine::contexts::{DefinitionContextDto, WritePermissionsDto};
 use log::info;
 use types::ThreadError;
 pub struct Definitions {}
@@ -41,9 +40,12 @@ impl ForeignDefinitions for Definitions {
             DefinitionInput::Text(content) => {
                 serde_json::from_str(&content).map_err(DefinitionError::Json)
             }
-            DefinitionInput::Processor(processor) => processor
-                .output_stdout(None)
-                .and_then(|stdout| serde_json::from_str(&stdout).map_err(DefinitionError::Json)),
+            DefinitionInput::Processor(processor) => {
+                info!("Run definition processor");
+                processor
+                    .output_stdout(None)
+                    .and_then(|stdout| serde_json::from_str(&stdout).map_err(DefinitionError::Json))
+            }
             DefinitionInput::Value(value) => {
                 serde_json::from_value(value.clone()).map_err(DefinitionError::Json)
             }

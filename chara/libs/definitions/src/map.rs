@@ -31,7 +31,7 @@ impl DefinitionDto {
     }
     pub fn map(self, location: Option<String>) -> Definition {
         let mut definition = Definition {
-            location,
+            location: self.location.clone().or(location),
             name: self.name.clone(),
             arguments: self.arguments(),
             environments: self.environments(),

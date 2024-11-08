@@ -41,14 +41,14 @@ pub trait Cli: Inputs {
                 let current_directory =
                     canonicalize(current_directory).map_err(DefinitionError::IO)?;
                 cmd.current_dir(current_directory);
-            }else{
+            } else {
                 info!("No current directory")
             }
-            let additional_arguments=  additional_arguments.unwrap_or(vec![]);
+            let additional_arguments = additional_arguments.unwrap_or(vec![]);
             cmd.args(&additional_arguments);
             let arguments = [self.flatten_arguments(), additional_arguments].concat();
             let environments = self.flatten_environments();
-            info!("Arguments {}", arguments.join(" "));
+            info!("Arguments {}", arguments.join(" ").escape_default());
             info!(
                 "Environments {}",
                 environments
@@ -71,9 +71,11 @@ pub trait Cli: Inputs {
                 .map_err(DefinitionError::IO)
                 .and_then(|output| {
                     if output.status.success() {
-                        String::from_utf8(output.stdout).map_err(DefinitionError::ParseUtf8).inspect(|stdout| {
-                            info!("Stdout {stdout}");
-                        })
+                        String::from_utf8(output.stdout)
+                            .map_err(DefinitionError::ParseUtf8)
+                            .inspect(|stdout| {
+                                info!("Stdout {stdout}");
+                            })
                     } else {
                         String::from_utf8(output.stderr)
                             .map_err(DefinitionError::ParseUtf8)
