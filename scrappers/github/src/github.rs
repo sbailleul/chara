@@ -56,7 +56,7 @@ impl GithubContext {
 pub struct Github {
     pub octocrab: Octocrab,
 }
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct Repository {
     pub owner: String,
     pub name: String,

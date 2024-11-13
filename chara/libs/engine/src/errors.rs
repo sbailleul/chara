@@ -19,5 +19,7 @@ pub enum DefinitionError {
     #[error("Cli error {0}")]
     Cli(String),
     #[error("Definition location is invalid {0}")]
-    InvalidLocation(String)
+    InvalidPath(String),
+    #[error("Path parsing failed")]
+    ParsePath
 }

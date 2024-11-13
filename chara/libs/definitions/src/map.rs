@@ -3,8 +3,8 @@ use std::{collections::HashMap, path, sync::Arc};
 use engine::{
     cli::{Argument, Environment},
     definition::{
-        Definition, DefinitionInput, Edge, ForeignDefinition, Install, Metadata, Processor,
-        ProcessorOverride, Tag,
+        Definition, DefinitionInput, Edge, EdgeOverride, ForeignDefinition, Install, Metadata,
+        Processor, ProcessorOverride, Tag,
     },
 };
 use serde_json::Value;
@@ -12,8 +12,8 @@ use serde_json::Value;
 use types::thread::{readonly, Readonly};
 
 use crate::definition::{
-    DefinitionDto, EnvironmentDto, ForeignDefinitionDto, NodeProcessorDto, ProcessorOverrideDto,
-    TagDto,
+    DefinitionDto, EnvironmentDto, ForeignDefinitionDto, ProcessorDto, ProcessorOverrideDto,
+    ReferenceOrObjectDto, TagDto,
 };
 const REFERENCE_PREFIX: &str = "#/";
 impl DefinitionDto {
@@ -114,8 +114,9 @@ impl DefinitionDto {
                                         Some(DefinitionInput::File(definition.clone()))
                                     } else if let Ok(content) = serde_json::from_str(definition) {
                                         Some(DefinitionInput::Value(content))
-                                    } else if let Some(processor) =
-                                        chara.processors.get(definition.trim_start_matches(REFERENCE_PREFIX))
+                                    } else if let Some(processor) = chara
+                                        .processors
+                                        .get(definition.trim_start_matches(REFERENCE_PREFIX))
                                     {
                                         Some(DefinitionInput::Processor(
                                             ProcessorOverride::processor(processor),
@@ -166,12 +167,29 @@ impl DefinitionDto {
                         edges: metadata
                             .edges
                             .iter()
-                            .map(|program| {
+                            .map(|metadata_edge| {
+                                let reference = metadata_edge.reference();
+
                                 definition
                                     .edges
-                                    .get(program.trim_start_matches(REFERENCE_PREFIX))
+                                    .get(reference.trim_start_matches(REFERENCE_PREFIX))
                                     .cloned()
-                                    .map(|edge| (program.clone(), edge))
+                                    .map(|edge| {
+                                        (
+                                            reference,
+                                            EdgeOverride {
+                                                edge,
+                                                arguments: map_arguments(
+                                                    &metadata_edge.arguments(),
+                                                    &definition.arguments,
+                                                ),
+                                                environments: map_environments(
+                                                    &metadata_edge.environments(),
+                                                    &definition.environments,
+                                                ),
+                                            },
+                                        )
+                                    })
                             })
                             .flatten()
                             .collect(),
@@ -198,15 +216,15 @@ impl DefinitionDto {
     }
 }
 fn map_node_processor(
-    node_processor: &NodeProcessorDto,
+    node_processor: &ReferenceOrObjectDto<ProcessorOverrideDto>,
     definition: &Definition,
 ) -> Option<ProcessorOverride> {
     match node_processor {
-        NodeProcessorDto::Reference(reference) => definition
+        ReferenceOrObjectDto::Reference(reference) => definition
             .processors
             .get(reference.trim_start_matches(REFERENCE_PREFIX))
             .map(|processor| ProcessorOverride::processor(processor)),
-        NodeProcessorDto::Processor(processor_override) => {
+        ReferenceOrObjectDto::Object(processor_override) => {
             map_processor_override(processor_override, definition)
         }
     }
@@ -218,7 +236,11 @@ fn map_processor_override(
 ) -> Option<ProcessorOverride> {
     definition
         .processors
-        .get(processor_override.reference.trim_start_matches(REFERENCE_PREFIX))
+        .get(
+            processor_override
+                .reference
+                .trim_start_matches(REFERENCE_PREFIX),
+        )
         .map(|processor| ProcessorOverride {
             arguments: map_arguments(&processor_override.arguments, &definition.arguments),
             environments: map_environments(

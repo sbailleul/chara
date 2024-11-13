@@ -1,18 +1,20 @@
 use std::collections::BTreeMap;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    context::{Edge, Metadata}, github::Repository, workflow::{Job, Workflow}
+    context::{Edge, Metadata},
+    github::Repository,
+    workflow::{Job, Workflow},
 };
 
-#[derive(Debug, Deserialize)]
-pub struct MetadataDto {
+#[derive(Debug, Deserialize, Serialize)]
+pub struct OtherMetadataDto {
     pub file: String,
     pub owner: Option<String>,
     pub repository: Option<String>,
 }
-impl Into<Metadata> for MetadataDto {
+impl Into<Metadata> for OtherMetadataDto {
     fn into(self) -> Metadata {
         Metadata {
             repository: self
@@ -29,9 +31,9 @@ impl Into<Metadata> for MetadataDto {
 #[derive(Debug, Deserialize)]
 pub struct EdgeDto {}
 
-impl Into<Edge> for EdgeDto {
-    fn into(self) -> Edge {
-        Edge {}
+impl EdgeDto {
+    pub fn to_edge(self, name: String) -> Edge {
+        Edge { name }
     }
 }
 
@@ -41,6 +43,7 @@ pub struct JobDto {
 }
 #[derive(Debug, Deserialize)]
 pub struct WorkflowDto {
+    pub name: String,
     #[serde(default)]
     pub jobs: BTreeMap<String, JobDto>,
 }
@@ -48,6 +51,7 @@ pub struct WorkflowDto {
 impl WorkflowDto {
     pub fn into(self) -> Workflow {
         Workflow {
+            name: self.name,
             jobs: self
                 .jobs
                 .into_iter()

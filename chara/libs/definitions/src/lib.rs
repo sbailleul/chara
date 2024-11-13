@@ -1,6 +1,5 @@
 use std::{
-    fs::{canonicalize, File},
-    io::BufReader,
+    env, fs::{self, canonicalize, File}, io::BufReader, path::Path
 };
 
 use cli::Cli;
@@ -31,7 +30,7 @@ impl ForeignDefinitions for Definitions {
                                 absolute_location
                                     .to_str()
                                     .map(|absolute_location| absolute_location.to_string())
-                                    .ok_or(DefinitionError::InvalidLocation(path.clone()))
+                                    .ok_or(DefinitionError::InvalidPath(path.clone()))
                             })?;
                         location = Some(absolute_location);
                         serde_json::from_reader(BufReader::new(file)).map_err(DefinitionError::Json)
@@ -68,9 +67,28 @@ impl ForeignDefinitions for Definitions {
                 let context =
                     serde_json::to_string(&context.definition).map_err(DefinitionError::Json)?;
 
+                let path = output_path()?;
                 processor
-                    .output_stdout(Some(vec!["--context".to_string(), context]))
-                    .and_then(|output| self.get(&DefinitionInput::Text(output)))
+                    .output_stdout(Some(vec![
+                        "--context".to_string(),
+                        context,
+                        "--output".to_string(),
+                        path.clone(),
+                    ]))
+                    .and_then(|_output| self.get(&DefinitionInput::File(path)))
             })
     }
+}
+
+fn output_path() -> Result<String, DefinitionError> {
+    let path = env::current_dir().map_err(DefinitionError::IO)?.join("outputs");
+    if !path.exists(){
+        fs::create_dir(&path).map_err(DefinitionError::IO)?;
+    }
+    let mut uniq_path = path.join(uuid::Uuid::new_v4().to_string());
+    uniq_path.set_extension("json");
+    uniq_path
+        .to_str()
+        .ok_or(DefinitionError::ParsePath)
+        .map(|path| path.to_string())
 }

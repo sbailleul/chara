@@ -6,7 +6,7 @@ use std::{
 use contexts::ProcessorContext;
 use definition::{Definition, DefinitionInput};
 use errors::DefinitionError;
-use log::error;
+use log::{error, info};
 use types::ThreadError;
 pub mod cli;
 pub mod contexts;
@@ -56,8 +56,9 @@ fn enrich_multi_thread(contexts: Vec<ProcessorContext>, definitions: Arc<dyn Def
         .for_each(|handler| {
             let result = handler.join();
             if let Ok(result) = result {
-                if let Err(err) = result {
-                    error!("{err}");
+                match result {
+                    Ok(definition) => info!("{:?}", definition),
+                    Err(err) => error!("{err}"),
                 }
             }
         });

@@ -1,13 +1,19 @@
-use serde::Deserialize;
-use serde_json::Value;
 pub use engine::contexts::{DefinitionContextDto, WritePermissionsDto};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use std::{
     collections::HashMap,
     hash::{DefaultHasher, Hash, Hasher},
 };
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProcessorResultDto {
+    pub metadata: Option<Value>,
+    pub edge: Option<DefinitionDto>,
+}
+
+#[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct TagDto {
     pub label: Option<String>,
     #[serde(default)]
@@ -15,18 +21,49 @@ pub struct TagDto {
     #[serde(flatten)]
     pub other: Value,
 }
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MetadataEdge {
+    pub r#ref: String,
+    #[serde(flatten)]
+    pub other: Value,
+    #[serde(default)]
+    pub arguments: Vec<String>,
+    #[serde(default)]
+    pub environments: Vec<EnvironmentDto>,
+}
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct MetadataDto {
     #[serde(default)]
-    pub edges: Vec<String>,
+    pub edges: Vec<ReferenceOrObjectDto<MetadataEdge>>,
     #[serde(default)]
     pub tags: Vec<String>,
     #[serde(flatten)]
     pub other: Value,
-    pub processor: Option<NodeProcessorDto>,
+    pub processor: Option<ReferenceOrObjectDto<ProcessorOverrideDto>>,
 }
-#[derive(Debug, Deserialize, Hash)]
+
+impl ReferenceOrObjectDto<MetadataEdge> {
+    pub fn reference(&self) -> String {
+        match self {
+            ReferenceOrObjectDto::Reference(reference) => reference.clone(),
+            ReferenceOrObjectDto::Object(edge) => edge.r#ref.clone(),
+        }
+    }
+    pub fn arguments(&self) -> Vec<String> {
+        match self {
+            ReferenceOrObjectDto::Reference(_reference) => vec![],
+            ReferenceOrObjectDto::Object(edge) => edge.arguments.clone(),
+        }
+    }
+    pub fn environments(&self) -> Vec<EnvironmentDto> {
+        match self {
+            ReferenceOrObjectDto::Reference(_reference) => vec![],
+            ReferenceOrObjectDto::Object(edge) => edge.environments.clone(),
+        }
+    }
+}
+#[derive(Debug, Deserialize,Serialize, Hash)]
 #[serde(untagged)]
 pub enum ForeignDefinitionDto {
     String(String),
@@ -39,15 +76,15 @@ impl ForeignDefinitionDto {
         s.finish().to_string()
     }
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct EdgeDto {
     pub definition: Option<ForeignDefinitionDto>,
-    pub processor: Option<NodeProcessorDto>,
+    pub processor: Option<ReferenceOrObjectDto<ProcessorOverrideDto>>,
     #[serde(flatten)]
     pub other: Value,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct InstallDto {
     pub program: String,
     #[serde(default)]
@@ -58,7 +95,7 @@ pub struct InstallDto {
     pub current_directory: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize,Serialize, Clone)]
 #[serde(untagged)]
 pub enum EnvironmentDto {
     Reference(String),
@@ -76,7 +113,7 @@ impl Hash for EnvironmentDto {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ProcessorDto {
     #[serde(default)]
     pub arguments: Vec<String>,
@@ -85,9 +122,9 @@ pub struct ProcessorDto {
     pub program: String,
     pub install: Option<InstallDto>,
     #[serde(rename(deserialize = "currentDirectory"))]
-    pub current_directory: Option<String>
+    pub current_directory: Option<String>,
 }
-#[derive(Debug, Deserialize, Hash)]
+#[derive(Debug, Deserialize, Serialize, Hash)]
 pub struct ProcessorOverrideDto {
     pub reference: String,
     #[serde(default)]
@@ -96,14 +133,14 @@ pub struct ProcessorOverrideDto {
     pub environments: Vec<EnvironmentDto>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
-pub enum NodeProcessorDto {
+pub enum ReferenceOrObjectDto<Value> {
     Reference(String),
-    Processor(ProcessorOverrideDto),
+    Object(Value),
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct DefinitionDto {
     pub name: String,
     pub location: Option<String>,

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod definition {
-    use std::{collections::HashMap, sync::Arc};
+    use std::{collections::HashMap, sync::Arc, vec};
 
     use map_macro::hash_map;
     use serde_json::Value;
@@ -8,7 +8,7 @@ mod definition {
 
     use crate::{
         contexts::{ContextDto, DefinitionContextDto, WritePermissionsDto},
-        definition::{Definition, Edge, Metadata, Processor, ProcessorOverride},
+        definition::{Definition, Edge, EdgeOverride, Metadata, Processor, ProcessorOverride},
     };
 
     #[test]
@@ -26,7 +26,7 @@ mod definition {
             other: serde_json::Value::Null,
         });
         let test_metadata = readonly(Metadata {
-            edges: hash_map! {"test_edge".to_string() => test_edge.clone()},
+            edges: hash_map! {"test_edge".to_string() =>EdgeOverride{edge: test_edge.clone(), arguments: vec![], environments: vec![]} },
             processor: Some(ProcessorOverride::processor(&reused_processor)),
             tags: HashMap::new(),
             other: serde_json::Value::Null,

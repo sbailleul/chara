@@ -1,14 +1,10 @@
-use std::{
-    fs::File,
-    io::Read,
-    path::Path,
-};
+use std::{fs::File, io::Read, path::Path};
 
 use definitions::definition::{DefinitionContextDto, WritePermissionsDto};
 use log::info;
 
 use crate::{
-    dtos::{EdgeDto, MetadataDto},
+    dtos::{EdgeDto, OtherMetadataDto},
     errors::Error,
     github::{Github, GithubContext, Repository},
 };
@@ -18,8 +14,10 @@ pub struct Metadata {
     pub file: String,
     pub repository: Option<Repository>,
 }
-#[derive(Debug)]
-pub struct Edge {}
+#[derive(Debug, Clone)]
+pub struct Edge {
+    pub name: String,
+}
 
 #[derive(Debug)]
 pub struct WritePermission {
@@ -46,12 +44,16 @@ impl DefinitionContext {
     pub fn new(value: DefinitionContextDto, github: GithubContext) -> Result<Self, Error> {
         let edge = value
             .edge
-            .map(|edge| serde_json::from_value::<EdgeDto>(edge.value).map_err(Error::Json))
+            .map(|edge| {
+                serde_json::from_value::<EdgeDto>(edge.value)
+                    .map(|dto| (edge.name, dto))
+                    .map_err(Error::Json)
+            })
             .transpose()?;
-        let metadata =
-            serde_json::from_value::<MetadataDto>(value.metadata.value).map_err(Error::Json)?;
+        let metadata = serde_json::from_value::<OtherMetadataDto>(value.metadata.value)
+            .map_err(Error::Json)?;
         Ok(Self {
-            edge: edge.map(EdgeDto::into),
+            edge: edge.map(|(name, dto)| dto.to_edge(name)),
             metadata: metadata.into(),
             github: Github::new(Some(github))?,
             location: value.location,

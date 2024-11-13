@@ -3,11 +3,9 @@
   "name": "library",
   "metadata": {
     "build": {
-      "private": ["#/CI/workflows/build"],
+      "tags": ["#/CI/workflows/build"],
       "edges": ["#/workflows"],
       "file": "./.github/workflows/build-workflow.yaml",
-      "repository": "chara_private",
-      "owner": "sbailleul",
       "processor": "#/reusable_workflow"
     }
   },

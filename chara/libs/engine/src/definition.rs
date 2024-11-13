@@ -20,9 +20,15 @@ pub struct Tag {
     pub tags: HashMap<String, Readonly<Tag>>,
     pub other: Value,
 }
+#[derive(Debug, Clone)]
+pub struct EdgeOverride{
+    pub arguments: Vec<Argument>,
+    pub environments: Vec<Environment>,
+    pub edge: Readonly<Edge>
+}
 #[derive(Debug)]
 pub struct Metadata {
-    pub edges: HashMap<String, Readonly<Edge>>,
+    pub edges: HashMap<String, EdgeOverride>,
     pub tags: HashMap<String, Readonly<Tag>>,
     pub other: Value,
     pub processor: Option<ProcessorOverride>,
@@ -80,6 +86,13 @@ impl ProcessorOverride {
             processor: processor.clone(),
         }
     }
+
+    pub fn with(&self, arguments: Vec<Argument>, environments: Vec<Environment>) -> Self{
+        let mut processor = self.clone();
+        processor.arguments = [arguments, processor.arguments].concat();
+        processor.environments = [environments, processor.environments].concat();
+        processor
+    }
 }
 impl PartialEq for ProcessorOverride {
     fn eq(&self, other: &Self) -> bool {
@@ -112,11 +125,11 @@ impl Definition {
                     .clone()
                     .into_iter()
                     .map(|(edge_key, edge_value)| {
-                        edge_value.read().ok().and_then(|edge_lock| {
+                        edge_value.edge.read().ok().and_then(|edge_lock| {
                             edge_lock.processor.as_ref().map(|processor| EdgeContext {
                                 key: edge_key.clone(),
                                 value: edge_lock.other.clone(),
-                                processor: processor.clone(),
+                                processor: processor.with(edge_value.arguments, edge_value.environments),
                                 definition: edge_lock.definition.clone(),
                             })
                         })
