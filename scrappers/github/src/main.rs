@@ -54,7 +54,7 @@ async fn main() -> Result<(), Error> {
             let res: WorkflowDto = serde_yaml::from_str(&content).map_err(Error::Yaml)?;
             let res = res.into();
             if let Ok(def) = res
-                .to_definition(context)
+                .to_processor_result(context)
                 .and_then(|def| serde_json::to_string(&def).map_err(Error::Json))
             {
                 fs::write(args.output, &def).map_err(Error::IO)?;

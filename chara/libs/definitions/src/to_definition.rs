@@ -119,7 +119,7 @@ impl DefinitionDto {
                                         .get(definition.trim_start_matches(REFERENCE_PREFIX))
                                     {
                                         Some(DefinitionInput::Processor(
-                                            ProcessorOverride::processor(processor),
+                                            ProcessorOverride::processor(processor, definition),
                                         ))
                                     } else {
                                         None
@@ -187,6 +187,10 @@ impl DefinitionDto {
                                                     &metadata_edge.environments(),
                                                     &definition.environments,
                                                 ),
+                                                definition: metadata_edge
+                                                    .definition()
+                                                    .map(|def| def.map(None)),
+                                                other: metadata_edge.other(),
                                             },
                                         )
                                     })
@@ -223,7 +227,7 @@ fn map_node_processor(
         ReferenceOrObjectDto::Reference(reference) => definition
             .processors
             .get(reference.trim_start_matches(REFERENCE_PREFIX))
-            .map(|processor| ProcessorOverride::processor(processor)),
+            .map(|processor| ProcessorOverride::processor(processor, reference)),
         ReferenceOrObjectDto::Object(processor_override) => {
             map_processor_override(processor_override, definition)
         }
@@ -242,6 +246,7 @@ fn map_processor_override(
                 .trim_start_matches(REFERENCE_PREFIX),
         )
         .map(|processor| ProcessorOverride {
+            reference: processor_override.reference.clone(),
             arguments: map_arguments(&processor_override.arguments, &definition.arguments),
             environments: map_environments(
                 &processor_override.environments,
@@ -256,14 +261,14 @@ fn map_arguments(
 ) -> Vec<Argument> {
     dto_arguments
         .iter()
-        .map(|program| {
-            if program.starts_with(REFERENCE_PREFIX) {
+        .map(|argument| {
+            if argument.starts_with(REFERENCE_PREFIX) {
                 arguments
-                    .get(program.trim_start_matches(REFERENCE_PREFIX))
+                    .get(argument.trim_start_matches(REFERENCE_PREFIX))
                     .map(|v| v.clone())
                     .map(|reference| Argument::Reference(reference))
             } else {
-                Some(Argument::Value(program.clone()))
+                Some(Argument::Value(argument.clone()))
             }
         })
         .flatten()
@@ -276,8 +281,8 @@ fn map_environments(
     dto_environments
         .iter()
         .map(|environment| match environment {
-            EnvironmentDto::Reference(program) => environments
-                .get(program.trim_start_matches(REFERENCE_PREFIX))
+            EnvironmentDto::Reference(reference) => environments
+                .get(reference.trim_start_matches(REFERENCE_PREFIX))
                 .map(|v| Environment::Reference(v.clone())),
             EnvironmentDto::Value(hash_map) => Some(Environment::Value(hash_map.clone())),
         })

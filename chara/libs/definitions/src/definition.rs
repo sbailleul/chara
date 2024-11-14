@@ -1,6 +1,6 @@
 pub use engine::contexts::{DefinitionContextDto, WritePermissionsDto};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 use std::{
     collections::HashMap,
@@ -8,9 +8,15 @@ use std::{
 };
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct EnrichmentDto{
+    pub edge: Option<Map<String, Value>>,  
+    pub metadata: Option<Map<String,Value>>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ProcessorResultDto {
-    pub metadata: Option<Value>,
-    pub edge: Option<DefinitionDto>,
+    pub enrichment: Option<EnrichmentDto>,
+    pub definition: Option<DefinitionDto>,
 }
 
 #[derive(Debug, Deserialize, Clone, Serialize)]
@@ -21,25 +27,26 @@ pub struct TagDto {
     #[serde(flatten)]
     pub other: Value,
 }
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct MetadataEdge {
     pub r#ref: String,
     #[serde(flatten)]
-    pub other: Value,
+    pub other: Map<String, Value>,
     #[serde(default)]
     pub arguments: Vec<String>,
     #[serde(default)]
     pub environments: Vec<EnvironmentDto>,
+    pub definition: Option<DefinitionDto>
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct MetadataDto {
     #[serde(default)]
     pub edges: Vec<ReferenceOrObjectDto<MetadataEdge>>,
     #[serde(default)]
     pub tags: Vec<String>,
     #[serde(flatten)]
-    pub other: Value,
+    pub other: Map<String,Value>,
     pub processor: Option<ReferenceOrObjectDto<ProcessorOverrideDto>>,
 }
 
@@ -62,8 +69,20 @@ impl ReferenceOrObjectDto<MetadataEdge> {
             ReferenceOrObjectDto::Object(edge) => edge.environments.clone(),
         }
     }
+    pub fn definition(&self) -> Option<DefinitionDto> {
+        match self {
+            ReferenceOrObjectDto::Reference(_reference) =>None,
+            ReferenceOrObjectDto::Object(edge) => edge.definition.clone(),
+        }
+    }
+    pub fn other(&self) ->Map<String, Value> {
+        match self {
+            ReferenceOrObjectDto::Reference(_reference) => Map::<String,Value>::new(),
+            ReferenceOrObjectDto::Object(edge) => edge.other.clone(),
+        }
+    }
 }
-#[derive(Debug, Deserialize,Serialize, Hash)]
+#[derive(Debug, Deserialize,Serialize, Hash, Clone)]
 #[serde(untagged)]
 pub enum ForeignDefinitionDto {
     String(String),
@@ -76,15 +95,15 @@ impl ForeignDefinitionDto {
         s.finish().to_string()
     }
 }
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct EdgeDto {
     pub definition: Option<ForeignDefinitionDto>,
     pub processor: Option<ReferenceOrObjectDto<ProcessorOverrideDto>>,
     #[serde(flatten)]
-    pub other: Value,
+    pub other: Map<String, Value>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct InstallDto {
     pub program: String,
     #[serde(default)]
@@ -113,7 +132,7 @@ impl Hash for EnvironmentDto {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ProcessorDto {
     #[serde(default)]
     pub arguments: Vec<String>,
@@ -124,7 +143,7 @@ pub struct ProcessorDto {
     #[serde(rename(deserialize = "currentDirectory"))]
     pub current_directory: Option<String>,
 }
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Deserialize, Serialize, Hash, Clone)]
 pub struct ProcessorOverrideDto {
     pub reference: String,
     #[serde(default)]
@@ -133,14 +152,14 @@ pub struct ProcessorOverrideDto {
     pub environments: Vec<EnvironmentDto>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 pub enum ReferenceOrObjectDto<Value> {
     Reference(String),
     Object(Value),
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DefinitionDto {
     pub name: String,
     pub location: Option<String>,

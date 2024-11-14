@@ -1,23 +1,35 @@
 use std::{
-    env, fs::{self, canonicalize, File}, io::BufReader, path::Path
+    env,
+    fs::{self, canonicalize, File},
+    io::BufReader,
+    path::Path,
 };
 
 use cli::Cli;
-use definition::DefinitionDto;
+use definition::{DefinitionDto, ProcessorResultDto};
 use engine::{
     contexts::ProcessorContext,
-    definition::{Definition, DefinitionInput},
+    definition::{Definition, DefinitionInput, Enrichment, ProcessorResult},
     errors::DefinitionError,
     Definitions as ForeignDefinitions,
 };
 mod cli;
 pub mod definition;
-mod map;
+mod to_definition;
+mod from_definition;
 use log::info;
+use serde::Deserialize;
 use types::ThreadError;
 pub struct Definitions {}
-impl ForeignDefinitions for Definitions {
-    fn get(&self, input: &DefinitionInput) -> Result<Definition, DefinitionError> {
+struct ReadOutput<T> {
+    output: T,
+    location: Option<String>,
+}
+impl Definitions {
+    fn read<T: for<'a> Deserialize<'a>>(
+        &self,
+        input: &DefinitionInput,
+    ) -> Result<ReadOutput<T>, DefinitionError> {
         let mut location = None;
         match input {
             DefinitionInput::File(path) => {
@@ -49,10 +61,16 @@ impl ForeignDefinitions for Definitions {
                 serde_json::from_value(value.clone()).map_err(DefinitionError::Json)
             }
         }
-        .map(|dto| DefinitionDto::map(dto, location))
+        .map(|output| ReadOutput { output, location })
+    }
+}
+impl ForeignDefinitions for Definitions {
+    fn get(&self, input: &DefinitionInput) -> Result<Definition, DefinitionError> {
+        self.read::<DefinitionDto>(input)
+            .map(|read_output| DefinitionDto::map(read_output.output, read_output.location))
     }
 
-    fn enrich(&self, context: &ProcessorContext) -> Result<Definition, DefinitionError> {
+    fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, DefinitionError> {
         context
             .processor
             .processor
@@ -75,14 +93,25 @@ impl ForeignDefinitions for Definitions {
                         "--output".to_string(),
                         path.clone(),
                     ]))
-                    .and_then(|_output| self.get(&DefinitionInput::File(path)))
+                    .and_then(|_output| {
+                        self.read::<ProcessorResultDto>(&DefinitionInput::File(path))
+                    })
+                    .map(|result| ProcessorResult {
+                        definition: result.output.definition.map(|def| def.map(result.location)),
+                        enrichment: result.output.enrichment.map(|enrichment| Enrichment {
+                            edge: enrichment.edge,
+                            metadata: enrichment.metadata,
+                        }),
+                    })
             })
     }
 }
 
 fn output_path() -> Result<String, DefinitionError> {
-    let path = env::current_dir().map_err(DefinitionError::IO)?.join("outputs");
-    if !path.exists(){
+    let path = env::current_dir()
+        .map_err(DefinitionError::IO)?
+        .join("outputs");
+    if !path.exists() {
         fs::create_dir(&path).map_err(DefinitionError::IO)?;
     }
     let mut uniq_path = path.join(uuid::Uuid::new_v4().to_string());

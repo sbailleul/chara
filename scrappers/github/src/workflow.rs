@@ -1,9 +1,10 @@
 use std::collections::{BTreeMap, HashMap};
 
 use definitions::definition::{
-    DefinitionContextDto, DefinitionDto, MetadataDto, ReferenceOrObjectDto,
+    DefinitionContextDto, DefinitionDto, MetadataDto, ProcessorResultDto, ReferenceOrObjectDto,
 };
 use map_macro::hash_map;
+use serde_json::{Map, Value};
 
 use crate::{context::DefinitionContext, dtos::OtherMetadataDto, errors::Error};
 
@@ -48,6 +49,16 @@ pub struct Workflow {
 }
 
 impl Workflow {
+    pub fn to_processor_result(
+        self,
+        context: DefinitionContext,
+    ) -> Result<ProcessorResultDto, Error> {
+        self.to_definition(context)
+            .map(|definition| ProcessorResultDto {
+                definition: Some(definition),
+                enrichment: None,
+            })
+    }
     pub fn to_definition(self, context: DefinitionContext) -> Result<DefinitionDto, Error> {
         Ok(DefinitionDto {
             name: self.name,
@@ -59,6 +70,12 @@ impl Workflow {
                         name.clone(),
                         MetadataDto {
                             other: serde_json::to_value(job.to_other_metadata(&context))
+                                .map(|value| {
+                                    value
+                                        .as_object()
+                                        .unwrap_or(&Map::<String, Value>::new())
+                                        .clone()
+                                })
                                 .map_err(Error::Json)?,
                             processor: None,
                             tags: vec![],

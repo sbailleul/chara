@@ -45,13 +45,15 @@ impl DefinitionContext {
         let edge = value
             .edge
             .map(|edge| {
-                serde_json::from_value::<EdgeDto>(edge.value)
+                serde_json::from_value::<EdgeDto>(serde_json::Value::Object(edge.value))
                     .map(|dto| (edge.name, dto))
                     .map_err(Error::Json)
             })
             .transpose()?;
-        let metadata = serde_json::from_value::<OtherMetadataDto>(value.metadata.value)
-            .map_err(Error::Json)?;
+        let metadata = serde_json::from_value::<OtherMetadataDto>(serde_json::Value::Object(
+            value.metadata.value,
+        ))
+        .map_err(Error::Json)?;
         Ok(Self {
             edge: edge.map(|(name, dto)| dto.to_edge(name)),
             metadata: metadata.into(),

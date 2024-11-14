@@ -3,7 +3,7 @@ mod definition {
     use std::{collections::HashMap, sync::Arc, vec};
 
     use map_macro::hash_map;
-    use serde_json::Value;
+    use serde_json::{Map, Value};
     use types::thread::readonly;
 
     use crate::{
@@ -22,14 +22,20 @@ mod definition {
         });
         let test_edge = readonly(Edge {
             definition: None,
-            processor: Some(ProcessorOverride::processor(&reused_processor)),
-            other: serde_json::Value::Null,
+            processor: Some(ProcessorOverride::processor(
+                &reused_processor,
+                &"reference".to_string(),
+            )),
+            other: Map::<String, Value>::new(),
         });
         let test_metadata = readonly(Metadata {
-            edges: hash_map! {"test_edge".to_string() =>EdgeOverride{edge: test_edge.clone(), arguments: vec![], environments: vec![]} },
-            processor: Some(ProcessorOverride::processor(&reused_processor)),
+            edges: hash_map! {"test_edge".to_string() =>EdgeOverride{edge: test_edge.clone(), arguments: vec![], environments: vec![], definition: None, other: Map::<String, Value>::new()} },
+            processor: Some(ProcessorOverride::processor(
+                &reused_processor,
+                &"reference".to_string(),
+            )),
             tags: HashMap::new(),
-            other: serde_json::Value::Null,
+            other: Map::<String, Value>::new(),
         });
 
         let definition = Definition {
@@ -50,8 +56,9 @@ mod definition {
         let expected_definition = DefinitionContextDto {
             location: None,
             write: WritePermissionsDto::both(),
-            edge: Some(ContextDto::new("test_edge".to_string(), Value::Null)),
-            metadata: ContextDto::new("test_metadata".to_string(), Value::Null),
+            processor_reference: "reference".to_string(),
+            edge: Some(ContextDto::new("test_edge".to_string(),  Map::<String, Value>::new())),
+            metadata: ContextDto::new("test_metadata".to_string(),  Map::<String, Value>::new()),
         };
         assert_eq!(contexts[0].definition, expected_definition);
         assert!(Arc::ptr_eq(

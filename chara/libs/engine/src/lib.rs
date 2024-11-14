@@ -4,10 +4,10 @@ use std::{
 };
 
 use contexts::ProcessorContext;
-use definition::{Definition, DefinitionInput};
+use definition::{Definition, DefinitionInput, ForeignDefinition, ProcessorResult};
 use errors::DefinitionError;
 use log::{error, info};
-use types::ThreadError;
+use types::{thread::Readonly, ThreadError};
 pub mod cli;
 pub mod contexts;
 pub mod definition;
@@ -16,10 +16,59 @@ pub mod errors;
 
 pub trait Definitions: Send + Sync {
     fn get(&self, definition: &DefinitionInput) -> Result<Definition, DefinitionError>;
-    fn enrich(&self, context: &ProcessorContext) -> Result<Definition, DefinitionError>;
+    fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, DefinitionError>;
 }
 
-pub fn run(definition: Definition, definitions: Arc<dyn Definitions>) {
+pub fn run(
+    definition: Definition,
+    definitions: Arc<dyn Definitions>,
+) -> Result<Definition, DefinitionError> {
+    let results = get_definitions(&definition, &definitions);
+    for (foreign_definition, definition_output) in results {
+        let mut foreign_definition = foreign_definition
+            .write()
+            .map_err(|_| DefinitionError::Thread(ThreadError::Poison))?;
+        foreign_definition.output = Some(definition_output);
+    }
+    let contexts = definition.processors_contexts();
+    let results = enrich(contexts, definitions);
+
+    for (context, result) in results {
+        let mut metadata = context
+            .metadata
+            .write()
+            .map_err(|_| DefinitionError::Thread(ThreadError::Poison))?;
+        if let Some(enrichment) = result.enrichment {
+            if let (true, Some(mut edge_enrichment), Some(edge_context)) = (
+                context.definition.write.edge,
+                enrichment.edge,
+                &context.definition.edge,
+            ) {
+                if let Some(edge) = metadata.edges.get_mut(&edge_context.name) {
+                    edge.other.append(&mut edge_enrichment);
+                }
+            }
+            if let (true, Some(mut metadata_enrichment)) =
+                (context.definition.write.metadata, enrichment.metadata)
+            {
+                metadata.other.append(&mut metadata_enrichment);
+            }
+        }
+        if let (Some(definition), Some(edge_context)) = (result.definition, context.definition.edge)
+        {
+            if let Some(edge) = metadata.edges.get_mut(&edge_context.name) {
+                edge.definition = Some(definition);
+            }
+        }
+    }
+    dbg!(&definition);
+    Ok(definition)
+}
+
+fn get_definitions(
+    definition: &Definition,
+    definitions: &Arc<dyn Definitions>,
+) -> Vec<(Readonly<ForeignDefinition>, Definition)> {
     definition
         .foreign_definitions
         .iter()
@@ -28,38 +77,44 @@ pub fn run(definition: Definition, definitions: Arc<dyn Definitions>) {
             let definitions = definitions.clone();
             thread::spawn(move || {
                 definition
-                    .write()
+                    .read()
                     .map_err(|_| DefinitionError::Thread(ThreadError::Poison))
-                    .and_then(|mut definition| {
-                        definitions
-                            .get(&definition.input)
-                            .map(|found_definition| definition.output = Some(found_definition))
-                    })
+                    .and_then(|definition| definitions.get(&definition.input))
+                    .map(|found_definition| (definition, found_definition))
             })
         })
-        .for_each(|handler| {
-            if let Ok(Err(err)) = handler.join() {
-                error!("{err}");
-            }
-        });
-    let contexts = definition.processors_contexts();
-    enrich_multi_thread(contexts, definitions);
+        .map(|handler| {
+            handler
+                .join()
+                .map_err(|_err| DefinitionError::Thread(ThreadError::Join))
+                .and_then(|res| res)
+                .inspect_err(|err| error!("{err}"))
+        })
+        .flatten()
+        .collect()
 }
 
-fn enrich_multi_thread(contexts: Vec<ProcessorContext>, definitions: Arc<dyn Definitions>) {
+fn enrich(
+    contexts: Vec<ProcessorContext>,
+    definitions: Arc<dyn Definitions>,
+) -> Vec<(ProcessorContext, ProcessorResult)> {
     contexts
         .into_iter()
         .map(|context| {
             let definitions = definitions.clone();
-            thread::spawn(move || definitions.enrich(&context))
+            thread::spawn(move || {
+                definitions
+                    .enrich(&context)
+                    .map(|processor_result| (context, processor_result))
+            })
         })
-        .for_each(|handler| {
-            let result = handler.join();
-            if let Ok(result) = result {
-                match result {
-                    Ok(definition) => info!("{:?}", definition),
-                    Err(err) => error!("{err}"),
-                }
-            }
-        });
+        .map(|handler| {
+            handler
+                .join()
+                .map_err(|_err| DefinitionError::Thread(ThreadError::Join))
+                .and_then(|res| res)
+                .inspect_err(|err| error!("{err}"))
+        })
+        .flatten()
+        .collect()
 }
