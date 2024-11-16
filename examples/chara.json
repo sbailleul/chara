@@ -3,7 +3,7 @@
   "name": "library",
   "metadata": {
     "build": {
-      "tags": ["#/CI/workflows/build"],
+      "tags": ["#/CI/workflow/build"],
       "edges": ["#/workflows"],
       "file": "./.github/workflows/build-workflow.yaml",
       "processor": "#/reusable_workflow"

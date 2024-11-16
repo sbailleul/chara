@@ -16,6 +16,7 @@ pub enum DefinitionInput {
 
 #[derive(Debug)]
 pub struct Tag {
+    pub reference: String,
     pub label: Option<String>,
     pub tags: HashMap<String, Readonly<Tag>>,
     pub other: Value,
@@ -53,14 +54,20 @@ pub struct Install {
 
 #[derive(Debug)]
 pub struct ForeignDefinition {
-    pub input: DefinitionInput,
+    pub input: Option<DefinitionInput>,
     pub output: Option<Definition>,
 }
 impl ForeignDefinition {
     pub fn input(input: DefinitionInput) -> Self {
         ForeignDefinition {
-            input,
+            input: Some(input),
             output: None,
+        }
+    }
+    pub fn output(output: Definition) -> Self {
+        ForeignDefinition {
+            input: None,
+            output: Some(output),
         }
     }
 }

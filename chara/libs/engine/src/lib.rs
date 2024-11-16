@@ -6,7 +6,7 @@ use std::{
 use contexts::ProcessorContext;
 use definition::{Definition, DefinitionInput, ForeignDefinition, ProcessorResult};
 use errors::DefinitionError;
-use log::{error, info};
+use log::error;
 use types::{thread::Readonly, ThreadError};
 pub mod cli;
 pub mod contexts;
@@ -17,6 +17,7 @@ pub mod errors;
 pub trait Definitions: Send + Sync {
     fn get(&self, definition: &DefinitionInput) -> Result<Definition, DefinitionError>;
     fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, DefinitionError>;
+    fn save(&self, definition: &Definition) -> Result<(), DefinitionError>;
 }
 
 pub fn run(
@@ -28,10 +29,12 @@ pub fn run(
         let mut foreign_definition = foreign_definition
             .write()
             .map_err(|_| DefinitionError::Thread(ThreadError::Poison))?;
-        foreign_definition.output = Some(definition_output);
+        if let None = foreign_definition.output{
+            foreign_definition.output = definition_output;
+        }
     }
     let contexts = definition.processors_contexts();
-    let results = enrich(contexts, definitions);
+    let results = enrich(contexts, definitions.clone());
 
     for (context, result) in results {
         let mut metadata = context
@@ -61,14 +64,15 @@ pub fn run(
             }
         }
     }
-    dbg!(&definition);
+    definitions.save(&definition)?;
+    // dbg!(&definition);
     Ok(definition)
 }
 
 fn get_definitions(
     definition: &Definition,
     definitions: &Arc<dyn Definitions>,
-) -> Vec<(Readonly<ForeignDefinition>, Definition)> {
+) -> Vec<(Readonly<ForeignDefinition>, Option<Definition>)> {
     definition
         .foreign_definitions
         .iter()
@@ -79,8 +83,9 @@ fn get_definitions(
                 definition
                     .read()
                     .map_err(|_| DefinitionError::Thread(ThreadError::Poison))
-                    .and_then(|definition| definitions.get(&definition.input))
+                    .and_then(|definition| definition.input.as_ref().map(|input| definitions.get(input)).transpose())
                     .map(|found_definition| (definition, found_definition))
+                    
             })
         })
         .map(|handler| {

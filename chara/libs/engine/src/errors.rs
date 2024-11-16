@@ -1,4 +1,3 @@
-
 use std::string::FromUtf8Error;
 
 use thiserror::Error;
@@ -21,5 +20,5 @@ pub enum DefinitionError {
     #[error("Definition location is invalid {0}")]
     InvalidPath(String),
     #[error("Path parsing failed")]
-    ParsePath
+    ParsePath,
 }

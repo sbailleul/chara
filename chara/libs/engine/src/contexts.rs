@@ -3,7 +3,7 @@ use serde_json::{Map, Value};
 use types::thread::Readonly;
 
 use crate::definition::{
-    Definition, Edge, EdgeOverride, ForeignDefinition, Metadata, ProcessorOverride,
+    Metadata, ProcessorOverride,
 };
 
 #[derive(Debug)]

@@ -2,7 +2,6 @@ use std::{
     env,
     fs::{self, canonicalize, File},
     io::BufReader,
-    path::Path,
 };
 
 use cli::Cli;
@@ -15,8 +14,8 @@ use engine::{
 };
 mod cli;
 pub mod definition;
-mod to_definition;
 mod from_definition;
+mod to_definition;
 use log::info;
 use serde::Deserialize;
 use types::ThreadError;
@@ -69,7 +68,15 @@ impl ForeignDefinitions for Definitions {
         self.read::<DefinitionDto>(input)
             .map(|read_output| DefinitionDto::map(read_output.output, read_output.location))
     }
-
+    fn save(&self, definition: &Definition) -> Result<(), DefinitionError> {
+        let path = create_path("chara_results")?;
+        serde_json::to_writer(
+            File::create(path).map_err(DefinitionError::IO)?,
+            &DefinitionDto::from_definition(definition),
+        )
+        .map_err(DefinitionError::Json)?;
+        Ok(())
+    }
     fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, DefinitionError> {
         context
             .processor
@@ -85,7 +92,7 @@ impl ForeignDefinitions for Definitions {
                 let context =
                     serde_json::to_string(&context.definition).map_err(DefinitionError::Json)?;
 
-                let path = output_path()?;
+                let path = create_path("processor_outputs")?;
                 processor
                     .output_stdout(Some(vec![
                         "--context".to_string(),
@@ -107,10 +114,8 @@ impl ForeignDefinitions for Definitions {
     }
 }
 
-fn output_path() -> Result<String, DefinitionError> {
-    let path = env::current_dir()
-        .map_err(DefinitionError::IO)?
-        .join("outputs");
+fn create_path(name: &str) -> Result<String, DefinitionError> {
+    let path = env::current_dir().map_err(DefinitionError::IO)?.join(name);
     if !path.exists() {
         fs::create_dir(&path).map_err(DefinitionError::IO)?;
     }

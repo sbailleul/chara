@@ -1,9 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
 
 use definitions::definition::{
-    DefinitionContextDto, DefinitionDto, MetadataDto, ProcessorResultDto, ReferenceOrObjectDto,
+    DefinitionDto, MetadataDto, ProcessorResultDto, ReferenceOrObjectDto,
 };
-use map_macro::hash_map;
 use serde_json::{Map, Value};
 
 use crate::{context::DefinitionContext, dtos::OtherMetadataDto, errors::Error};

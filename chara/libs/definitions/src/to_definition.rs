@@ -12,7 +12,7 @@ use serde_json::Value;
 use types::thread::{readonly, Readonly};
 
 use crate::definition::{
-    DefinitionDto, EnvironmentDto, ForeignDefinitionDto, ProcessorDto, ProcessorOverrideDto,
+    DefinitionDto, EnvironmentDto, ForeignDefinitionDto, ProcessorOverrideDto,
     ReferenceOrObjectDto, TagDto,
 };
 const REFERENCE_PREFIX: &str = "#/";
@@ -48,44 +48,53 @@ impl DefinitionDto {
         definition
     }
 
-    fn set_tags(&self, chara: &mut Definition) {
-        let tags = extract_tags(
-            &readonly(Tag {
-                label: None,
-                tags: HashMap::new(),
-                other: Value::Null,
-            }),
-            &"#".to_string(),
-            &self.tags,
-        );
-        chara.tags = tags
+    fn set_tags(&self, definition: &mut Definition) {
+        let root_path = "#".to_string();
+        let root_tag = readonly(Tag {
+            reference: root_path.clone(),
+            label: None,
+            tags: HashMap::new(),
+            other: Value::Null,
+        });
+        let tags = extract_tags(&root_tag, &root_path, &self.tags);
+
+        definition.tags = tags
+            .iter()
+            .map(|(_key, path, _parent_tag, tag)| (path.clone(), tag.clone()))
+            .collect::<HashMap<String, Readonly<Tag>>>();
+        definition.tags.insert(root_path, root_tag.clone());
+        let tags: HashMap<String, Arc<std::sync::RwLock<Tag>>> = tags
             .into_iter()
-            .map(|(_key, program, _parent_tag, tag)| (program, tag))
-            .collect();
+            .filter(|(_key, _path, parent_tag, _tag)| Arc::ptr_eq(parent_tag, &root_tag))
+            .map(|(_key, path, _parent_tag, tag)| (path.clone(), tag.clone()))
+            .collect::<HashMap<String, Readonly<Tag>>>();
+        if let Ok(mut root_tag) = root_tag.write() {
+            root_tag.tags = tags;
+        };
     }
 
-    fn set_processors(&self, chara: &mut Definition) {
-        chara.processors = self
+    fn set_processors(&self, definition: &mut Definition) {
+        definition.processors = self
             .processors
             .iter()
             .map(|(key, processor)| {
                 (
                     key.clone(),
                     readonly(Processor {
-                        arguments: map_arguments(&processor.arguments, &chara.arguments),
+                        arguments: map_arguments(&processor.arguments, &definition.arguments),
                         program: processor.program.clone(),
                         install: processor.install.as_ref().map(|install| Install {
-                            arguments: map_arguments(&install.arguments, &chara.arguments),
+                            arguments: map_arguments(&install.arguments, &definition.arguments),
                             environments: map_environments(
                                 &install.environments,
-                                &chara.environments,
+                                &definition.environments,
                             ),
                             program: install.program.clone(),
                             current_directory: install.current_directory.clone(),
                         }),
                         environments: map_environments(
                             &processor.environments,
-                            &chara.environments,
+                            &definition.environments,
                         ),
                         current_directory: processor.current_directory.clone(),
                     }),
@@ -94,62 +103,78 @@ impl DefinitionDto {
             .collect()
     }
 
-    fn set_edges(&self, chara: &mut Definition) {
-        chara.edges = self
+    fn set_edges(&self, definition: &mut Definition) {
+        definition.edges = self
             .edges
             .iter()
             .map(|(key, edge)| {
-                let definition = edge
+                let foreign_definition = edge
                     .definition
                     .as_ref()
-                    .map(|definition| {
-                        let key = definition.key();
+                    .map(|foreign_definition| {
+                        let key = foreign_definition.key();
 
-                        if let Some(definition) = chara.foreign_definitions.get(&key) {
-                            Some(definition.clone())
+                        if let Some(foreign_definition) = definition.foreign_definitions.get(&key) {
+                            Some(foreign_definition.clone())
                         } else {
-                            let definition_input = match definition {
-                                ForeignDefinitionDto::String(definition) => {
-                                    if path::Path::new(definition).exists() {
-                                        Some(DefinitionInput::File(definition.clone()))
-                                    } else if let Ok(content) = serde_json::from_str(definition) {
-                                        Some(DefinitionInput::Value(content))
-                                    } else if let Some(processor) = chara
-                                        .processors
-                                        .get(definition.trim_start_matches(REFERENCE_PREFIX))
-                                    {
-                                        Some(DefinitionInput::Processor(
-                                            ProcessorOverride::processor(processor, definition),
-                                        ))
-                                    } else {
-                                        None
-                                    }
-                                }
-                                ForeignDefinitionDto::Processor(processor_override) => {
-                                    map_processor_override(processor_override, chara)
-                                        .map(DefinitionInput::Processor)
-                                }
-                            };
-
-                            definition_input.map(|definition_input| {
-                                let foreign_definition =
-                                    readonly(ForeignDefinition::input(definition_input));
-                                chara
+                            if let ForeignDefinitionDto::Definition(ready_definition) =
+                                foreign_definition
+                            {
+                                let foreign_definition = readonly(ForeignDefinition::output(
+                                    ready_definition.clone().map(None),
+                                ));
+                                definition
                                     .foreign_definitions
                                     .insert(key, foreign_definition.clone());
-                                foreign_definition
-                            })
+                                Some(foreign_definition)
+                            } else {
+                                let definition_input = match foreign_definition {
+                                    ForeignDefinitionDto::String(text_definition) => {
+                                        if path::Path::new(text_definition).exists() {
+                                            Some(DefinitionInput::File(text_definition.clone()))
+                                        } else if let Ok(content) =
+                                            serde_json::from_str(text_definition)
+                                        {
+                                            Some(DefinitionInput::Value(content))
+                                        } else if let Some(processor) = definition.processors.get(
+                                            text_definition.trim_start_matches(REFERENCE_PREFIX),
+                                        ) {
+                                            Some(DefinitionInput::Processor(
+                                                ProcessorOverride::processor(
+                                                    processor,
+                                                    text_definition,
+                                                ),
+                                            ))
+                                        } else {
+                                            None
+                                        }
+                                    }
+                                    ForeignDefinitionDto::Processor(processor_override) => {
+                                        map_processor_override(processor_override, definition)
+                                            .map(DefinitionInput::Processor)
+                                    }
+                                    ForeignDefinitionDto::Definition(_) => None,
+                                };
+                                definition_input.map(|definition_input| {
+                                    let foreign_definition =
+                                        readonly(ForeignDefinition::input(definition_input));
+                                    definition
+                                        .foreign_definitions
+                                        .insert(key, foreign_definition.clone());
+                                    foreign_definition
+                                })
+                            }
                         }
                     })
                     .flatten();
                 (
                     key.clone(),
                     readonly(Edge {
-                        definition,
+                        definition: foreign_definition,
                         processor: edge
                             .processor
                             .as_ref()
-                            .and_then(|processor| map_node_processor(&processor, &chara)),
+                            .and_then(|processor| map_node_processor(&processor, &definition)),
                         other: edge.other.clone(),
                     }),
                 )
@@ -266,7 +291,10 @@ fn map_arguments(
                 arguments
                     .get(argument.trim_start_matches(REFERENCE_PREFIX))
                     .map(|v| v.clone())
-                    .map(|reference| Argument::Reference(reference))
+                    .map(|reference| Argument::Reference {
+                        name: argument.clone(),
+                        arguments: reference,
+                    })
             } else {
                 Some(Argument::Value(argument.clone()))
             }
@@ -283,7 +311,10 @@ fn map_environments(
         .map(|environment| match environment {
             EnvironmentDto::Reference(reference) => environments
                 .get(reference.trim_start_matches(REFERENCE_PREFIX))
-                .map(|v| Environment::Reference(v.clone())),
+                .map(|v| Environment::Reference {
+                    name: reference.clone(),
+                    environment: v.clone(),
+                }),
             EnvironmentDto::Value(hash_map) => Some(Environment::Value(hash_map.clone())),
         })
         .flatten()
@@ -296,13 +327,14 @@ fn extract_tags(
 ) -> Vec<(String, String, Readonly<Tag>, Readonly<Tag>)> {
     tags.iter()
         .map(|(k, tag_dto)| {
-            let program = parent_path.to_owned() + "/" + k;
+            let path = parent_path.to_owned() + "/" + k;
             if tag_dto.tags.is_empty() {
                 vec![(
                     k.clone(),
-                    program,
+                    path.clone(),
                     parent.clone(),
                     readonly(Tag {
+                        reference: k.clone(),
                         label: tag_dto.label.clone(),
                         tags: HashMap::new(),
                         other: tag_dto.other.clone(),
@@ -310,12 +342,13 @@ fn extract_tags(
                 )]
             } else {
                 let tag = readonly(Tag {
+                    reference: k.clone(),
                     label: tag_dto.label.clone(),
                     tags: HashMap::new(),
                     other: tag_dto.other.clone(),
                 });
 
-                let mut inner_tags = extract_tags(&tag, &program, &tag_dto.tags);
+                let mut inner_tags = extract_tags(&tag, &path, &tag_dto.tags);
                 if let Ok(mut tag_value) = tag.write() {
                     tag_value.tags = inner_tags
                         .iter()
@@ -327,7 +360,7 @@ fn extract_tags(
                         })
                         .collect()
                 }
-                inner_tags.push((k.clone(), program, parent.clone(), tag));
+                inner_tags.push((k.clone(), path, parent.clone(), tag));
                 inner_tags
             }
         })

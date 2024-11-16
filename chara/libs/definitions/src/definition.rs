@@ -86,7 +86,14 @@ impl ReferenceOrObjectDto<MetadataEdge> {
 #[serde(untagged)]
 pub enum ForeignDefinitionDto {
     String(String),
+    Definition(DefinitionDto),
     Processor(ProcessorOverrideDto),
+}
+impl Hash for DefinitionDto{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.location.hash(state);
+    }
 }
 impl ForeignDefinitionDto {
     pub fn key(&self) -> String {
