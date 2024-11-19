@@ -7,15 +7,11 @@ use std::{
 use cli::Cli;
 use definition::{DefinitionDto, ProcessorResultDto};
 use engine::{
-    contexts::ProcessorContext,
-    definition::{Definition, DefinitionInput, Enrichment, ProcessorResult},
-    errors::DefinitionError,
-    Definitions as ForeignDefinitions,
+    contexts::ProcessorContext, definition::{Definition, DefinitionInput}, errors::DefinitionError, processor::{Enrichment, ProcessorResult}, Definitions as ForeignDefinitions
 };
 mod cli;
 pub mod definition;
-mod from_definition;
-mod to_definition;
+mod mappers;
 use log::info;
 use serde::Deserialize;
 use types::ThreadError;

@@ -2,8 +2,8 @@ use std::{collections::HashMap, fs::canonicalize, process::Command};
 
 use engine::{
     cli::{Argument, Environment},
-    definition::{Install, Processor, ProcessorOverride},
-    errors::DefinitionError,
+    definition::Install,
+    errors::DefinitionError, processor::{Processor, ProcessorOverride},
 };
 use log::info;
 use types::ThreadError;

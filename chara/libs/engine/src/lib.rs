@@ -4,16 +4,17 @@ use std::{
 };
 
 use contexts::ProcessorContext;
-use definition::{Definition, DefinitionInput, ForeignDefinition, ProcessorResult};
+use definition::{Definition, DefinitionInput, ForeignDefinition};
 use errors::DefinitionError;
 use log::error;
+use processor::ProcessorResult;
 use types::{thread::Readonly, ThreadError};
 pub mod cli;
 pub mod contexts;
 pub mod definition;
 mod definition_test;
 pub mod errors;
-
+pub mod processor;
 pub trait Definitions: Send + Sync {
     fn get(&self, definition: &DefinitionInput) -> Result<Definition, DefinitionError>;
     fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, DefinitionError>;

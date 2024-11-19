@@ -1,21 +1,26 @@
 use std::{collections::HashMap, path, sync::Arc};
 
 use engine::{
-    cli::{Argument, Environment},
     definition::{
-        Definition, DefinitionInput, Edge, EdgeOverride, ForeignDefinition, Install, Metadata,
-        Processor, ProcessorOverride, Tag,
+        Definition, DefinitionInput, Edge, EdgeOverride, ForeignDefinition, Install, Metadata, Tag,
     },
+    processor::{Processor, ProcessorOverride},
 };
 use serde_json::Value;
 
 use types::thread::{readonly, Readonly};
 
 use crate::definition::{
-    DefinitionDto, EnvironmentDto, ForeignDefinitionDto, ProcessorOverrideDto,
-    ReferenceOrObjectDto, TagDto,
+    DefinitionDto, ForeignDefinitionDto,
 };
-const REFERENCE_PREFIX: &str = "#/";
+
+use super::{
+    arguments::to_arguments,
+    environments::to_environments,
+    processors::{to_node_processor, to_processor_override},
+    tags::to_tags,
+    REFERENCE_PREFIX,
+};
 impl DefinitionDto {
     fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {
         self.arguments
@@ -56,7 +61,7 @@ impl DefinitionDto {
             tags: HashMap::new(),
             other: Value::Null,
         });
-        let tags = extract_tags(&root_tag, &root_path, &self.tags);
+        let tags = to_tags(&root_tag, &root_path, &self.tags);
 
         definition.tags = tags
             .iter()
@@ -81,18 +86,18 @@ impl DefinitionDto {
                 (
                     key.clone(),
                     readonly(Processor {
-                        arguments: map_arguments(&processor.arguments, &definition.arguments),
+                        arguments: to_arguments(&processor.arguments, &definition.arguments),
                         program: processor.program.clone(),
                         install: processor.install.as_ref().map(|install| Install {
-                            arguments: map_arguments(&install.arguments, &definition.arguments),
-                            environments: map_environments(
+                            arguments: to_arguments(&install.arguments, &definition.arguments),
+                            environments: to_environments(
                                 &install.environments,
                                 &definition.environments,
                             ),
                             program: install.program.clone(),
                             current_directory: install.current_directory.clone(),
                         }),
-                        environments: map_environments(
+                        environments: to_environments(
                             &processor.environments,
                             &definition.environments,
                         ),
@@ -150,7 +155,7 @@ impl DefinitionDto {
                                         }
                                     }
                                     ForeignDefinitionDto::Processor(processor_override) => {
-                                        map_processor_override(processor_override, definition)
+                                        to_processor_override(processor_override, definition)
                                             .map(DefinitionInput::Processor)
                                     }
                                     ForeignDefinitionDto::Definition(_) => None,
@@ -174,7 +179,7 @@ impl DefinitionDto {
                         processor: edge
                             .processor
                             .as_ref()
-                            .and_then(|processor| map_node_processor(&processor, &definition)),
+                            .and_then(|processor| to_node_processor(&processor, &definition)),
                         other: edge.other.clone(),
                     }),
                 )
@@ -204,11 +209,11 @@ impl DefinitionDto {
                                             reference,
                                             EdgeOverride {
                                                 edge,
-                                                arguments: map_arguments(
+                                                arguments: to_arguments(
                                                     &metadata_edge.arguments(),
                                                     &definition.arguments,
                                                 ),
-                                                environments: map_environments(
+                                                environments: to_environments(
                                                     &metadata_edge.environments(),
                                                     &definition.environments,
                                                 ),
@@ -237,133 +242,10 @@ impl DefinitionDto {
                         processor: metadata
                             .processor
                             .as_ref()
-                            .and_then(|processor| map_node_processor(processor, definition)),
+                            .and_then(|processor| to_node_processor(processor, definition)),
                     }),
                 )
             })
             .collect()
     }
-}
-fn map_node_processor(
-    node_processor: &ReferenceOrObjectDto<ProcessorOverrideDto>,
-    definition: &Definition,
-) -> Option<ProcessorOverride> {
-    match node_processor {
-        ReferenceOrObjectDto::Reference(reference) => definition
-            .processors
-            .get(reference.trim_start_matches(REFERENCE_PREFIX))
-            .map(|processor| ProcessorOverride::processor(processor, reference)),
-        ReferenceOrObjectDto::Object(processor_override) => {
-            map_processor_override(processor_override, definition)
-        }
-    }
-}
-
-fn map_processor_override(
-    processor_override: &ProcessorOverrideDto,
-    definition: &Definition,
-) -> Option<ProcessorOverride> {
-    definition
-        .processors
-        .get(
-            processor_override
-                .reference
-                .trim_start_matches(REFERENCE_PREFIX),
-        )
-        .map(|processor| ProcessorOverride {
-            reference: processor_override.reference.clone(),
-            arguments: map_arguments(&processor_override.arguments, &definition.arguments),
-            environments: map_environments(
-                &processor_override.environments,
-                &definition.environments,
-            ),
-            processor: processor.clone(),
-        })
-}
-fn map_arguments(
-    dto_arguments: &Vec<String>,
-    arguments: &HashMap<String, Readonly<Vec<String>>>,
-) -> Vec<Argument> {
-    dto_arguments
-        .iter()
-        .map(|argument| {
-            if argument.starts_with(REFERENCE_PREFIX) {
-                arguments
-                    .get(argument.trim_start_matches(REFERENCE_PREFIX))
-                    .map(|v| v.clone())
-                    .map(|reference| Argument::Reference {
-                        name: argument.clone(),
-                        arguments: reference,
-                    })
-            } else {
-                Some(Argument::Value(argument.clone()))
-            }
-        })
-        .flatten()
-        .collect()
-}
-fn map_environments(
-    dto_environments: &Vec<EnvironmentDto>,
-    environments: &HashMap<String, Readonly<HashMap<String, String>>>,
-) -> Vec<Environment> {
-    dto_environments
-        .iter()
-        .map(|environment| match environment {
-            EnvironmentDto::Reference(reference) => environments
-                .get(reference.trim_start_matches(REFERENCE_PREFIX))
-                .map(|v| Environment::Reference {
-                    name: reference.clone(),
-                    environment: v.clone(),
-                }),
-            EnvironmentDto::Value(hash_map) => Some(Environment::Value(hash_map.clone())),
-        })
-        .flatten()
-        .collect()
-}
-fn extract_tags(
-    parent: &Readonly<Tag>,
-    parent_path: &String,
-    tags: &HashMap<String, TagDto>,
-) -> Vec<(String, String, Readonly<Tag>, Readonly<Tag>)> {
-    tags.iter()
-        .map(|(k, tag_dto)| {
-            let path = parent_path.to_owned() + "/" + k;
-            if tag_dto.tags.is_empty() {
-                vec![(
-                    k.clone(),
-                    path.clone(),
-                    parent.clone(),
-                    readonly(Tag {
-                        reference: k.clone(),
-                        label: tag_dto.label.clone(),
-                        tags: HashMap::new(),
-                        other: tag_dto.other.clone(),
-                    }),
-                )]
-            } else {
-                let tag = readonly(Tag {
-                    reference: k.clone(),
-                    label: tag_dto.label.clone(),
-                    tags: HashMap::new(),
-                    other: tag_dto.other.clone(),
-                });
-
-                let mut inner_tags = extract_tags(&tag, &path, &tag_dto.tags);
-                if let Ok(mut tag_value) = tag.write() {
-                    tag_value.tags = inner_tags
-                        .iter()
-                        .filter(|(_k, _parent_path, parent_tag, _inner_tag)| {
-                            Arc::ptr_eq(&parent_tag, &tag)
-                        })
-                        .map(|(k, _parent_path, _parent_tag, inner_tag)| {
-                            (k.clone(), inner_tag.clone())
-                        })
-                        .collect()
-                }
-                inner_tags.push((k.clone(), path, parent.clone(), tag));
-                inner_tags
-            }
-        })
-        .flatten()
-        .collect()
 }

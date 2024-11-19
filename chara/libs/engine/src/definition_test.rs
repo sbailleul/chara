@@ -8,7 +8,7 @@ mod definition {
 
     use crate::{
         contexts::{ContextDto, DefinitionContextDto, WritePermissionsDto},
-        definition::{Definition, Edge, EdgeOverride, Metadata, Processor, ProcessorOverride},
+        definition::{Definition, Edge, EdgeOverride, Metadata}, processor::{Processor, ProcessorOverride},
     };
 
     #[test]
