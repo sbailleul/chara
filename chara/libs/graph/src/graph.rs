@@ -14,6 +14,8 @@ impl Hash for Edge {
         self.id.hash(state);
     }
 }
+
+
 #[derive(Serialize, PartialEq, Eq)]
 pub struct Node {
     pub id: String,
