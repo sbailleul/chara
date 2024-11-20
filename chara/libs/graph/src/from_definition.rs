@@ -1,5 +1,4 @@
 use definitions::definition::{DefinitionDto, ReferenceOrObjectDto};
-use engine::definition::Definition;
 
 use crate::graph::{Edge, Graph, Node};
 use std::collections::HashSet;

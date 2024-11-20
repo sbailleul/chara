@@ -1,5 +1,5 @@
 use serde_json::{Map, Value};
-use std::{collections::HashMap, hash::Hasher, sync::Arc};
+use std::{collections::HashMap, hash::Hasher};
 use types::thread::Readonly;
 
 use super::cli::{Argument, Environment};
