@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use engine::{definition::Tag, errors::DefinitionError};
+use engine::{definition::Tag, errors::CharaError};
 use types::{thread::{readonly, Readonly}, ThreadError};
 
 use crate::definition::TagDto;
@@ -60,8 +60,8 @@ pub fn from_tags(tags: &HashMap<String, Readonly<Tag>>) -> HashMap<String, TagDt
         .map(|(_, tag)| {
             let tag = tag
                 .read()
-                .map_err(|_| DefinitionError::Thread(ThreadError::Poison))?;
-            Ok::<(String, TagDto), DefinitionError>((
+                .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
+            Ok::<(String, TagDto), CharaError>((
                 tag.reference.clone(),
                 TagDto {
                     tags: from_tags(&tag.tags),

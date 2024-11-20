@@ -5,7 +5,7 @@ use std::{
 
 use contexts::ProcessorContext;
 use definition::{Definition, DefinitionInput, ForeignDefinition};
-use errors::DefinitionError;
+use errors::CharaError;
 use log::error;
 use processor::ProcessorResult;
 use types::{thread::Readonly, ThreadError};
@@ -16,20 +16,20 @@ mod definition_test;
 pub mod errors;
 pub mod processor;
 pub trait Definitions: Send + Sync {
-    fn get(&self, definition: &DefinitionInput) -> Result<Definition, DefinitionError>;
-    fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, DefinitionError>;
-    fn save(&self, definition: &Definition) -> Result<(), DefinitionError>;
+    fn get(&self, definition: &DefinitionInput) -> Result<Definition, CharaError>;
+    fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, CharaError>;
+    fn save(&self, definition: &Definition) -> Result<(), CharaError>;
 }
 
 pub fn run(
     definition: Definition,
     definitions: Arc<dyn Definitions>,
-) -> Result<Definition, DefinitionError> {
+) -> Result<Definition, CharaError> {
     let results = get_definitions(&definition, &definitions);
     for (foreign_definition, definition_output) in results {
         let mut foreign_definition = foreign_definition
             .write()
-            .map_err(|_| DefinitionError::Thread(ThreadError::Poison))?;
+            .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
         if let None = foreign_definition.output{
             foreign_definition.output = definition_output;
         }
@@ -41,7 +41,7 @@ pub fn run(
         let mut metadata = context
             .metadata
             .write()
-            .map_err(|_| DefinitionError::Thread(ThreadError::Poison))?;
+            .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
         if let Some(enrichment) = result.enrichment {
             if let (true, Some(mut edge_enrichment), Some(edge_context)) = (
                 context.definition.write.edge,
@@ -83,7 +83,7 @@ fn get_definitions(
             thread::spawn(move || {
                 definition
                     .read()
-                    .map_err(|_| DefinitionError::Thread(ThreadError::Poison))
+                    .map_err(|_| CharaError::Thread(ThreadError::Poison))
                     .and_then(|definition| definition.input.as_ref().map(|input| definitions.get(input)).transpose())
                     .map(|found_definition| (definition, found_definition))
                     
@@ -92,7 +92,7 @@ fn get_definitions(
         .map(|handler| {
             handler
                 .join()
-                .map_err(|_err| DefinitionError::Thread(ThreadError::Join))
+                .map_err(|_err| CharaError::Thread(ThreadError::Join))
                 .and_then(|res| res)
                 .inspect_err(|err| error!("{err}"))
         })
@@ -117,7 +117,7 @@ fn enrich(
         .map(|handler| {
             handler
                 .join()
-                .map_err(|_err| DefinitionError::Thread(ThreadError::Join))
+                .map_err(|_err| CharaError::Thread(ThreadError::Join))
                 .and_then(|res| res)
                 .inspect_err(|err| error!("{err}"))
         })

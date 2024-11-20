@@ -1,9 +1,10 @@
 [workspace]
-members = ["app", "libs/engine", "libs/definitions", "libs/types"]
+members = ["cli", "libs/engine", "libs/definitions", "libs/types", "libs/graph"]
 
 [workspace.dependencies]
 definitions = { path = "libs/definitions" }
 engine = { path = "libs/engine" }
+graph = { path = "libs/graph" }
 types = { path = "libs/types" }
 
 serde = { version = "1.0.214", features = ["derive"] }

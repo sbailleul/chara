@@ -4,7 +4,7 @@ use thiserror::Error;
 use types::ThreadError;
 
 #[derive(Debug, Error)]
-pub enum DefinitionError {
+pub enum CharaError {
     #[error("Parse json error {0}")]
     Json(serde_json::Error),
     #[error("Parse utf8 {0}")]

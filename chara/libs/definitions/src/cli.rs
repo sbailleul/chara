@@ -3,7 +3,7 @@ use std::{collections::HashMap, fs::canonicalize, process::Command};
 use engine::{
     cli::{Argument, Environment},
     definition::Install,
-    errors::DefinitionError, processor::{Processor, ProcessorOverride},
+    errors::CharaError, processor::{Processor, ProcessorOverride},
 };
 use log::info;
 use types::ThreadError;
@@ -27,19 +27,19 @@ pub trait Inputs {
 }
 
 pub trait Cli: Inputs {
-    fn program(&self) -> Result<String, DefinitionError>;
-    fn current_directory(&self) -> Result<Option<String>, DefinitionError>;
+    fn program(&self) -> Result<String, CharaError>;
+    fn current_directory(&self) -> Result<Option<String>, CharaError>;
     fn command(
         &self,
         additional_arguments: Option<Vec<String>>,
-    ) -> Result<Command, DefinitionError> {
+    ) -> Result<Command, CharaError> {
         self.program().and_then(|program| {
             let mut cmd = Command::new(&program);
             info!("Run program {program}");
             if let Some(current_directory) = self.current_directory()?.as_ref() {
                 info!("Current directory {current_directory}");
                 let current_directory =
-                    canonicalize(current_directory).map_err(DefinitionError::IO)?;
+                    canonicalize(current_directory).map_err(CharaError::IO)?;
                 cmd.current_dir(current_directory);
             } else {
                 info!("No current directory")
@@ -65,22 +65,22 @@ pub trait Cli: Inputs {
     fn output_stdout(
         &self,
         additional_arguments: Option<Vec<String>>,
-    ) -> Result<String, DefinitionError> {
+    ) -> Result<String, CharaError> {
         self.command(additional_arguments).and_then(|mut cmd| {
             cmd.output()
-                .map_err(DefinitionError::IO)
+                .map_err(CharaError::IO)
                 .and_then(|output| {
                     if output.status.success() {
                         String::from_utf8(output.stdout)
-                            .map_err(DefinitionError::ParseUtf8)
+                            .map_err(CharaError::ParseUtf8)
                             .inspect(|stdout| {
                                 info!("Stdout {stdout}");
                             })
                     } else {
                         String::from_utf8(output.stderr)
-                            .map_err(DefinitionError::ParseUtf8)
+                            .map_err(CharaError::ParseUtf8)
                             .and_then(|stderr| {
-                                Err(DefinitionError::Process(format!(
+                                Err(CharaError::Process(format!(
                                     "Processor execution failed [Error : {stderr}]"
                                 )))
                             })
@@ -99,10 +99,10 @@ impl Inputs for Install {
     }
 }
 impl Cli for Install {
-    fn program(&self) -> Result<String, DefinitionError> {
+    fn program(&self) -> Result<String, CharaError> {
         Ok(self.program.clone())
     }
-    fn current_directory(&self) -> Result<Option<String>, DefinitionError> {
+    fn current_directory(&self) -> Result<Option<String>, CharaError> {
         Ok(self.current_directory.clone())
     }
 }
@@ -116,11 +116,11 @@ impl Inputs for Processor {
     }
 }
 impl Cli for Processor {
-    fn program(&self) -> Result<String, DefinitionError> {
+    fn program(&self) -> Result<String, CharaError> {
         Ok(self.program.clone())
     }
 
-    fn current_directory(&self) -> Result<Option<String>, DefinitionError> {
+    fn current_directory(&self) -> Result<Option<String>, CharaError> {
         Ok(self.current_directory.clone())
     }
 }
@@ -149,17 +149,17 @@ impl Inputs for ProcessorOverride {
     }
 }
 impl Cli for ProcessorOverride {
-    fn program(&self) -> Result<String, DefinitionError> {
+    fn program(&self) -> Result<String, CharaError> {
         self.processor
             .read()
-            .or(Err(DefinitionError::Thread(ThreadError::Poison)))
+            .or(Err(CharaError::Thread(ThreadError::Poison)))
             .and_then(|processor| processor.program())
     }
 
-    fn current_directory(&self) -> Result<Option<String>, DefinitionError> {
+    fn current_directory(&self) -> Result<Option<String>, CharaError> {
         self.processor
             .read()
             .map(|processor| processor.current_directory.clone())
-            .or(Err(DefinitionError::Thread(ThreadError::Poison)))
+            .or(Err(CharaError::Thread(ThreadError::Poison)))
     }
 }

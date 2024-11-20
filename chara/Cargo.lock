@@ -67,6 +67,7 @@ dependencies = [
  "colog",
  "definitions",
  "engine",
+ "graph",
  "serde",
  "serde_json",
 ]
@@ -161,6 +162,16 @@ dependencies = [
  "cfg-if",
  "libc",
  "wasi",
+]
+
+[[package]]
+name = "graph"
+version = "0.1.0"
+dependencies = [
+ "definitions",
+ "engine",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

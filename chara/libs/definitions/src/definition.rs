@@ -8,9 +8,9 @@ use std::{
 };
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct EnrichmentDto{
-    pub edge: Option<Map<String, Value>>,  
-    pub metadata: Option<Map<String,Value>>
+pub struct EnrichmentDto {
+    pub edge: Option<Map<String, Value>>,
+    pub metadata: Option<Map<String, Value>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -36,7 +36,7 @@ pub struct MetadataEdge {
     pub arguments: Vec<String>,
     #[serde(default)]
     pub environments: Vec<EnvironmentDto>,
-    pub definition: Option<DefinitionDto>
+    pub definition: Option<DefinitionDto>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -46,7 +46,7 @@ pub struct MetadataDto {
     #[serde(default)]
     pub tags: Vec<String>,
     #[serde(flatten)]
-    pub other: Map<String,Value>,
+    pub other: Map<String, Value>,
     pub processor: Option<ReferenceOrObjectDto<ProcessorOverrideDto>>,
 }
 
@@ -71,25 +71,25 @@ impl ReferenceOrObjectDto<MetadataEdge> {
     }
     pub fn definition(&self) -> Option<DefinitionDto> {
         match self {
-            ReferenceOrObjectDto::Reference(_reference) =>None,
+            ReferenceOrObjectDto::Reference(_reference) => None,
             ReferenceOrObjectDto::Object(edge) => edge.definition.clone(),
         }
     }
-    pub fn other(&self) ->Map<String, Value> {
+    pub fn other(&self) -> Map<String, Value> {
         match self {
-            ReferenceOrObjectDto::Reference(_reference) => Map::<String,Value>::new(),
+            ReferenceOrObjectDto::Reference(_reference) => Map::<String, Value>::new(),
             ReferenceOrObjectDto::Object(edge) => edge.other.clone(),
         }
     }
 }
-#[derive(Debug, Deserialize,Serialize, Hash, Clone)]
+#[derive(Debug, Deserialize, Serialize, Hash, Clone)]
 #[serde(untagged)]
 pub enum ForeignDefinitionDto {
     String(String),
     Definition(DefinitionDto),
     Processor(ProcessorOverrideDto),
 }
-impl Hash for DefinitionDto{
+impl Hash for DefinitionDto {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.name.hash(state);
         self.location.hash(state);
@@ -121,7 +121,7 @@ pub struct InstallDto {
     pub current_directory: Option<String>,
 }
 
-#[derive(Debug, Deserialize,Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 pub enum EnvironmentDto {
     Reference(String),

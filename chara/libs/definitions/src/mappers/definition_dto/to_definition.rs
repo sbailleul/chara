@@ -10,17 +10,11 @@ use serde_json::Value;
 
 use types::thread::{readonly, Readonly};
 
-use crate::definition::{
+use crate::{definition::{
     DefinitionDto, ForeignDefinitionDto,
-};
+}, mappers::{arguments::to_arguments, environments::to_environments, processors::{to_node_processor, to_processor_override}, tags::to_tags, REFERENCE_PREFIX}};
 
-use super::{
-    arguments::to_arguments,
-    environments::to_environments,
-    processors::{to_node_processor, to_processor_override},
-    tags::to_tags,
-    REFERENCE_PREFIX,
-};
+
 impl DefinitionDto {
     fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {
         self.arguments
