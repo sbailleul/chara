@@ -9,7 +9,7 @@ pub mod graph;
 
     pub fn process(input: &DefinitionInput) -> Result<(), CharaError> {
         let definitions = Definitions {};
-        let file_path = create_path("graphs")?;
+        let file_path = create_path("../../app/src/assets", Some("graph"))?;
         definitions.read(input).and_then(|definition| {
             serde_json::to_writer(
                 File::create(file_path).map_err(CharaError::IO)?,

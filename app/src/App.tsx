@@ -7,7 +7,7 @@ import {
 	useEdgesState,
 	useNodesState,
 } from "@xyflow/react";
-import React, { useCallback } from "react";
+import { useCallback } from "react";
 
 import "@xyflow/react/dist/style.css";
 import Graph from "./assets/graph.json";

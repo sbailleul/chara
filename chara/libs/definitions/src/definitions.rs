@@ -72,7 +72,7 @@ impl ForeignDefinitions for Definitions {
             .map(|read_output| DefinitionDto::map(read_output.output, read_output.location))
     }
     fn save(&self, definition: &Definition) -> Result<(), CharaError> {
-        let path = create_path("chara_results")?;
+        let path = create_path("chara_results", None)?;
         serde_json::to_writer(
             File::create(path).map_err(CharaError::IO)?,
             &DefinitionDto::from_definition(definition),
@@ -95,7 +95,7 @@ impl ForeignDefinitions for Definitions {
                 let context =
                     serde_json::to_string(&context.definition).map_err(CharaError::Json)?;
 
-                let path = create_path("processor_outputs")?;
+                let path = create_path("processor_outputs", None)?;
                 processor
                     .output_stdout(Some(vec![
                         "--context".to_string(),
@@ -117,12 +117,12 @@ impl ForeignDefinitions for Definitions {
     }
 }
 
-pub fn create_path(name: &str) -> Result<String, CharaError> {
+pub fn create_path(name: &str, file_name: Option<&str>) -> Result<String, CharaError> {
     let path = env::current_dir().map_err(CharaError::IO)?.join(name);
     if !path.exists() {
         fs::create_dir(&path).map_err(CharaError::IO)?;
     }
-    let mut uniq_path = path.join(uuid::Uuid::new_v4().to_string());
+    let mut uniq_path = path.join(file_name.unwrap_or(&uuid::Uuid::new_v4().to_string()));
     uniq_path.set_extension("json");
     uniq_path
         .to_str()
