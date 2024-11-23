@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
-use engine::{definition::Tag, errors::CharaError};
-use types::{thread::{readonly, Readonly}, ThreadError};
+use engine::{definition::definition::Tag, errors::CharaError};
+use common::{thread::{readonly, Readonly}, ThreadError};
 
 use crate::definition::TagDto;
 

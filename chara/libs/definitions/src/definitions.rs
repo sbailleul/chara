@@ -5,15 +5,11 @@ use std::{
 };
 
 use engine::{
-    contexts::ProcessorContext,
-    definition::{Definition, DefinitionInput},
-    errors::CharaError,
-    processor::{Enrichment, ProcessorResult},
-    Definitions as ForeignDefinitions,
+    contexts::ProcessorContext, definition::{definition::Definition, input::DefinitionInput}, errors::CharaError, processor::{Enrichment, ProcessorResult}, Definitions as ForeignDefinitions
 };
 use log::info;
 use serde::Deserialize;
-use types::ThreadError;
+use common::ThreadError;
 
 use crate::{
     cli::Cli,

@@ -4,7 +4,7 @@
 		{ "name": "lib_engine", "path": "../chara/libs/engine" },
 		{ "name": "lib_definitions", "path": "../chara/libs/definitions" },
 		{ "name": "lib_graph", "path": "../chara/libs/graph" },
-		{ "name": "lib_types", "path": "../chara/libs/types" },
+		{ "name": "lib_common", "path": "../chara/libs/common" },
 		{
 			"name": "root",
 			"path": "../"

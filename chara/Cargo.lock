@@ -106,15 +106,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "common"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "definitions"
 version = "0.1.0"
 dependencies = [
+ "common",
  "engine",
  "log",
  "serde",
  "serde_json",
  "thiserror",
- "types",
  "uuid",
 ]
 
@@ -122,12 +130,12 @@ dependencies = [
 name = "engine"
 version = "0.1.0"
 dependencies = [
+ "common",
  "log",
  "map-macro",
  "serde",
  "serde_json",
  "thiserror",
- "types",
 ]
 
 [[package]]
@@ -336,13 +344,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "types"
-version = "0.1.0"
-dependencies = [
- "thiserror",
 ]
 
 [[package]]

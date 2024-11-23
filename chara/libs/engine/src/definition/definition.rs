@@ -1,50 +1,82 @@
+use common::{merge::{Merge, Overwrite}, thread::Readonly};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, hash::Hasher};
-use types::thread::Readonly;
 
-use super::cli::{Argument, Environment};
-use crate::{contexts::{
-    ContextDto, DefinitionContextDto, EdgeContext, ProcessorContext, WritePermissionsDto,
-}, processor::{Processor, ProcessorOverride}};
-#[derive(Debug, PartialEq, Eq)]
-pub enum DefinitionInput {
-    File(String),
-    Text(String),
-    Value(Value),
-    Processor(ProcessorOverride),
-}
+use crate::{
+    cli::{Argument, Environment},
+    contexts::{
+        ContextDto, DefinitionContextDto, EdgeContext, ProcessorContext, WritePermissionsDto,
+    },
+    processor::{Processor, ProcessorOverride},
+};
 
-#[derive(Debug)]
+use super::foreign_definition::ForeignDefinition;
+
+#[derive(Debug, Clone)]
 pub struct Tag {
     pub reference: String,
     pub label: Option<String>,
     pub tags: HashMap<String, Readonly<Tag>>,
     pub other: Value,
 }
-#[derive(Debug)]
+
+impl Merge for Tag{
+    fn merge(&mut self, other: &Self) {
+        self.label.overwrite(&other.label);
+        self.other.merge(&other.other);
+        self.reference = other.reference.clone();
+        self.tags.merge(&other.tags);
+    }
+}
+#[derive(Debug, Clone)]
 pub struct EdgeOverride {
     pub arguments: Vec<Argument>,
     pub environments: Vec<Environment>,
     pub edge: Readonly<Edge>,
     pub other: Map<String, Value>,
-    pub definition: Option<Definition>
+    pub definition: Option<Definition>,
 }
-#[derive(Debug)]
+impl Merge for EdgeOverride{
+    fn merge(&mut self, other: &Self) {
+        self.arguments.merge(&other.arguments);
+        self.environments.merge(&other.environments);
+        self.edge.merge(&other.edge);
+        self.other.merge(&other.other);
+        self.definition.merge(&other.definition);
+    }
+}
+#[derive(Debug, Clone)]
 pub struct Metadata {
     pub edges: HashMap<String, EdgeOverride>,
     pub tags: HashMap<String, Readonly<Tag>>,
     pub other: Map<String, Value>,
     pub processor: Option<ProcessorOverride>,
 }
+impl Merge for Metadata{
+    fn merge(&mut self, other: &Self) {
+        self.edges.merge(&other.edges);
+        self.tags.merge(&other.tags);
+        self.other.merge(&other.other);
+        self.processor.merge(&other.processor);
+    }
+}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Edge {
     pub definition: Option<Readonly<ForeignDefinition>>,
     pub processor: Option<ProcessorOverride>,
     pub other: Map<String, Value>,
 }
 
-#[derive(Debug)]
+impl Merge for Edge{
+    fn merge(&mut self, other: &Self) {
+        self.definition.merge(&other.definition);
+        self.processor.merge(&other.processor);
+        self.other.merge(&other.other);
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Install {
     pub arguments: Vec<Argument>,
     pub program: String,
@@ -52,29 +84,17 @@ pub struct Install {
     pub current_directory: Option<String>,
 }
 
-#[derive(Debug)]
-pub struct ForeignDefinition {
-    pub input: Option<DefinitionInput>,
-    pub output: Option<Definition>,
-}
-impl ForeignDefinition {
-    pub fn input(input: DefinitionInput) -> Self {
-        ForeignDefinition {
-            input: Some(input),
-            output: None,
-        }
-    }
-    pub fn output(output: Definition) -> Self {
-        ForeignDefinition {
-            input: None,
-            output: Some(output),
-        }
+impl Merge for Install{
+    fn merge(&mut self, other: &Self) {
+        self.arguments.merge(&other.arguments);
+        self.program = other.program.clone();
+        self.environments.merge(&other.environments);
+        self.current_directory.overwrite(&other.current_directory);
     }
 }
 
 
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Definition {
     pub name: String,
     pub location: Option<String>,
@@ -86,7 +106,6 @@ pub struct Definition {
     pub environments: HashMap<String, Readonly<HashMap<String, String>>>,
     pub foreign_definitions: HashMap<String, Readonly<ForeignDefinition>>,
 }
-
 
 impl Definition {
     pub fn processors_contexts(&self) -> Vec<ProcessorContext> {
@@ -100,8 +119,10 @@ impl Definition {
                             edge_lock.processor.as_ref().map(|processor| EdgeContext {
                                 key: edge_key.clone(),
                                 value: edge_lock.other.clone(),
-                                processor: processor
-                                    .with(edge_value.arguments.clone(), edge_value.environments.clone()),
+                                processor: processor.from_with(
+                                    edge_value.arguments.clone(),
+                                    edge_value.environments.clone(),
+                                ),
                             })
                         })
                     })

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use serde_json::{Map, Value};
-use types::thread::Readonly;
+use common::{merge::Merge, thread::Readonly};
 
-use crate::{cli::{Argument, Environment}, definition::{Definition, Install}};
+use crate::{cli::{Argument, Environment}, definition::definition::{Definition, Install}};
 
 #[derive(Debug)]
 pub struct Enrichment {
@@ -16,13 +16,20 @@ pub struct ProcessorResult {
     pub definition: Option<Definition>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Processor {
     pub arguments: Vec<Argument>,
     pub program: String,
     pub install: Option<Install>,
     pub environments: Vec<Environment>,
     pub current_directory: Option<String>,
+}
+impl Merge for Processor{
+    fn merge(&mut self, other: &Self) {
+        self.arguments.merge(&other.arguments);
+        self.program = other.program.clone();
+        self.program = other.program.clone();
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -42,11 +49,20 @@ impl ProcessorOverride {
         }
     }
 
-    pub fn with(&self, arguments: Vec<Argument>, environments: Vec<Environment>) -> Self {
+    pub fn from_with(&self, arguments: Vec<Argument>, environments: Vec<Environment>) -> Self {
         let mut processor = self.clone();
         processor.arguments = [arguments, processor.arguments].concat();
         processor.environments = [environments, processor.environments].concat();
         processor
+    }
+    
+}
+impl Merge for ProcessorOverride{
+    fn merge(&mut self, other: &Self) {
+        self.arguments.append(&mut other.arguments.clone());
+        self.environments.append(&mut other.environments.clone());
+        self.reference = other.reference.clone();
+        // self.processor.read().unwrap().
     }
 }
 impl PartialEq for ProcessorOverride {

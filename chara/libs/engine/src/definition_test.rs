@@ -4,11 +4,11 @@ mod definition {
 
     use map_macro::hash_map;
     use serde_json::{Map, Value};
-    use types::thread::readonly;
+    use common::thread::readonly;
 
     use crate::{
         contexts::{ContextDto, DefinitionContextDto, WritePermissionsDto},
-        definition::{Definition, Edge, EdgeOverride, Metadata}, processor::{Processor, ProcessorOverride},
+        definition::definition::{Definition, Edge, EdgeOverride, Metadata}, processor::{Processor, ProcessorOverride},
     };
 
     #[test]

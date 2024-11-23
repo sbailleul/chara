@@ -1,12 +1,10 @@
 use std::{collections::HashMap, fs::canonicalize, process::Command};
 
 use engine::{
-    cli::{Argument, Environment},
-    definition::Install,
-    errors::CharaError, processor::{Processor, ProcessorOverride},
+    cli::{Argument, Environment}, definition::definition::Install, errors::CharaError, processor::{Processor, ProcessorOverride}
 };
 use log::info;
-use types::ThreadError;
+use common::ThreadError;
 pub trait Inputs {
     fn arguments(&self) -> Vec<Argument>;
     fn environments(&self) -> Vec<Environment>;

@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use types::thread::Readonly;
+use common::thread::Readonly;
 
-use crate::{definition::Metadata, processor::ProcessorOverride};
+use crate::{definition::definition::Metadata, processor::ProcessorOverride};
 
 #[derive(Debug)]
 pub struct ProcessorContext {

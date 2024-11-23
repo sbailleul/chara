@@ -1,7 +1,7 @@
 use std::string::FromUtf8Error;
 
 use thiserror::Error;
-use types::ThreadError;
+use common::ThreadError;
 
 #[derive(Debug, Error)]
 pub enum CharaError {

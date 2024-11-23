@@ -1,4 +1,4 @@
-use engine::{definition::Definition, processor::ProcessorOverride};
+use engine::{definition::definition::Definition, processor::ProcessorOverride};
 
 use crate::definition::{ProcessorOverrideDto, ReferenceOrObjectDto};
 

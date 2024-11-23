@@ -1,19 +1,25 @@
 use std::{collections::HashMap, path, sync::Arc};
 
 use engine::{
-    definition::{
-        Definition, DefinitionInput, Edge, EdgeOverride, ForeignDefinition, Install, Metadata, Tag,
-    },
+    definition::{definition::{
+        Definition, Edge, EdgeOverride, Install, Metadata, Tag,
+    }, foreign_definition::ForeignDefinition, input::DefinitionInput},
     processor::{Processor, ProcessorOverride},
 };
 use serde_json::Value;
 
-use types::thread::{readonly, Readonly};
+use common::thread::{readonly, Readonly};
 
-use crate::{definition::{
-    DefinitionDto, ForeignDefinitionDto,
-}, mappers::{arguments::to_arguments, environments::to_environments, processors::{to_node_processor, to_processor_override}, tags::to_tags, REFERENCE_PREFIX}};
-
+use crate::{
+    definition::{DefinitionDto, ForeignDefinitionDto},
+    mappers::{
+        arguments::to_arguments,
+        environments::to_environments,
+        processors::{to_node_processor, to_processor_override},
+        tags::to_tags,
+        REFERENCE_PREFIX,
+    },
+};
 
 impl DefinitionDto {
     fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {

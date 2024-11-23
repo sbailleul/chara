@@ -1,6 +1,6 @@
 use std::{collections::HashMap, hash::Hash};
 
-use types::thread::Readonly;
+use common::thread::Readonly;
 
 #[derive(Debug, Clone)]
 pub enum Argument {

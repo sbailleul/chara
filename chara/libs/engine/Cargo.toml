@@ -7,7 +7,7 @@ edition = "2021"
 map-macro = { workspace = true }
 
 
-types={workspace = true}
+common={workspace = true}
 serde={workspace = true}
 serde_json={workspace = true}
 log={workspace=true}

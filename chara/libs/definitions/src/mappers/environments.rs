@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use engine::cli::Environment;
-use types::thread::Readonly;
+use common::thread::Readonly;
 
 use crate::definition::EnvironmentDto;
 

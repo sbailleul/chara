@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use engine::{
-    definition::Definition,
+    definition::definition::Definition,
     errors::CharaError,
 };
-use types::ThreadError;
+use common::ThreadError;
 
 use crate::{definition::{
     DefinitionDto, EdgeDto, ForeignDefinitionDto, InstallDto, MetadataDto, MetadataEdge,

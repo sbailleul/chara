@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use engine::cli::Argument;
-use types::thread::Readonly;
+use common::thread::Readonly;
 
 use super::REFERENCE_PREFIX;
 
