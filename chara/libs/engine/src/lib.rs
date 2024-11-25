@@ -27,7 +27,17 @@ pub fn run(
     definition: Definition,
     definitions: Arc<dyn Definitions>,
 ) -> Result<Definition, CharaError> {
-    let results = get_definitions(&definition, &definitions);
+    process_definition(&definition, &definitions)?;
+    definitions.save(&definition)?;
+
+    Ok(definition)
+}
+
+fn process_definition(
+    definition: &Definition,
+    definitions: &Arc<dyn Definitions>,
+) -> Result<(), CharaError> {
+    let results = get_definitions(definition, definitions);
     for (foreign_definition, definition_output) in results {
         let mut foreign_definition = foreign_definition
             .write()
@@ -38,7 +48,14 @@ pub fn run(
     }
     let contexts = definition.processors_contexts();
     let results = enrich(contexts, definitions.clone());
+    handle_results(results, definitions)?;
+    Ok(())
+}
 
+fn handle_results(
+    results: Vec<(ProcessorContext, ProcessorResult)>,
+    definitions: &Arc<dyn Definitions>,
+) -> Result<(), CharaError> {
     for (context, result) in results {
         let mut metadata = context
             .metadata
@@ -74,12 +91,13 @@ pub fn run(
                     }
                 }
                 edge.definition.merge(&Some(result_definition));
+                if let Some(definition) = edge.definition.as_ref() {
+                    process_definition(definition, definitions)?
+                }
             }
         }
     }
-    definitions.save(&definition)?;
-    // dbg!(&definition);
-    Ok(definition)
+    Ok(())
 }
 
 fn get_definitions(
