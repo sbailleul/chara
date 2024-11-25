@@ -59,7 +59,9 @@ impl Workflow {
             })
     }
     pub fn to_definition(self, context: DefinitionContext) -> Result<DefinitionDto, Error> {
+        dbg!(&context);
         Ok(DefinitionDto {
+            id: None,
             name: self.name,
             metadata: self
                 .jobs

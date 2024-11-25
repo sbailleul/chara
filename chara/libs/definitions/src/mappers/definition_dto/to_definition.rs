@@ -9,6 +9,7 @@ use engine::{
 use serde_json::Value;
 
 use common::thread::{readonly, Readonly};
+use uuid::Uuid;
 
 use crate::{
     definition::{DefinitionDto, ForeignDefinitionDto},
@@ -34,8 +35,15 @@ impl DefinitionDto {
             .map(|(key, value)| (key.clone(), readonly(value.clone())))
             .collect()
     }
+    pub fn map_overwrite_location(self, location: String) -> Definition {
+        let location = Some(location);
+        let mut definition = self.map(location.clone());
+        definition.location = location;
+        definition
+    }
     pub fn map(self, location: Option<String>) -> Definition {
         let mut definition = Definition {
+            id: self.id.clone().unwrap_or(Uuid::new_v4().to_string()),
             location: self.location.clone().or(location),
             name: self.name.clone(),
             arguments: self.arguments(),

@@ -39,6 +39,7 @@ mod definition {
         });
 
         let definition = Definition {
+            id: "123".to_string(),
             location: None,
             name: "Test".to_string(),
             metadata: hash_map! {
@@ -67,3 +68,4 @@ mod definition {
         ));
     }
 }
+

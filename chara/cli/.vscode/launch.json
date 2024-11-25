@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'app'",
+            "name": "Debug executable 'cli'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=app",
-                    "--package=app"
+                    "--bin=cli",
+                    "--package=cli"
                 ],
                 "filter": {
-                    "name": "app",
+                    "name": "cli",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'app'",
+            "name": "Debug unit tests in executable 'cli'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=app",
-                    "--package=app"
+                    "--bin=cli",
+                    "--package=cli"
                 ],
                 "filter": {
-                    "name": "app",
+                    "name": "cli",
                     "kind": "bin"
                 }
             },
@@ -63,6 +63,25 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug unit tests in library 'common'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=common"
+                ],
+                "filter": {
+                    "name": "common",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in library 'engine'",
             "cargo": {
                 "args": [
@@ -82,16 +101,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'types'",
+            "name": "Debug unit tests in library 'graph'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
                     "--lib",
-                    "--package=types"
+                    "--package=graph"
                 ],
                 "filter": {
-                    "name": "types",
+                    "name": "graph",
                     "kind": "lib"
                 }
             },

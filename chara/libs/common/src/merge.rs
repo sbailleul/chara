@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash};
+use std::{collections::HashMap, hash::Hash, sync::Arc};
 
 use serde_json::{Map, Value};
 
@@ -49,13 +49,15 @@ impl Merge for Value {
 impl Merge for Map<String, Value> {
     fn merge(&mut self, other: &Self) {
         for (k, v) in other {
-            self.merge(other);
             self.entry(k.clone()).or_insert(Value::Null).merge(v);
         }
     }
 }
 impl<T: Merge + Clone> Merge for Readonly<T> {
     fn merge(&mut self, other: &Self) {
+        if Arc::ptr_eq(self, other) {
+            return;
+        }
         if let (Ok(mut value), Ok(other_value)) = (self.write(), other.read()) {
             value.merge(&other_value);
         }

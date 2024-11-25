@@ -4,12 +4,16 @@ use std::{
     io::BufReader,
 };
 
+use common::ThreadError;
 use engine::{
-    contexts::ProcessorContext, definition::{definition::Definition, input::DefinitionInput}, errors::CharaError, processor::{Enrichment, ProcessorResult}, Definitions as ForeignDefinitions
+    contexts::ProcessorContext,
+    definition::{definition::Definition, input::DefinitionInput},
+    errors::CharaError,
+    processor::{Enrichment, ProcessorResult},
+    Definitions as ForeignDefinitions,
 };
 use log::info;
 use serde::Deserialize;
-use common::ThreadError;
 
 use crate::{
     cli::Cli,
@@ -22,12 +26,14 @@ pub struct ReadOutput<T> {
     location: Option<String>,
 }
 impl Definitions {
-    pub fn read(&self, input: &DefinitionInput) -> Result<DefinitionDto, CharaError> {
-        self.read_output::<DefinitionDto>(input)
-            .map(|def| def.output)
+    pub fn read(input: &DefinitionInput) -> Result<DefinitionDto, CharaError> {
+        Definitions::read_output::<DefinitionDto>(input).map(|def| def.output)
+    }
+    pub fn get(path: String) -> Result<Definition, CharaError> {
+        Definitions::read_output::<DefinitionDto>(&DefinitionInput::File(path.clone()))
+            .map(|read_output| DefinitionDto::map_overwrite_location(read_output.output, path))
     }
     fn read_output<T: for<'a> Deserialize<'a>>(
-        &self,
         input: &DefinitionInput,
     ) -> Result<ReadOutput<T>, CharaError> {
         let mut location = None;
@@ -64,11 +70,13 @@ impl Definitions {
 }
 impl ForeignDefinitions for Definitions {
     fn get(&self, input: &DefinitionInput) -> Result<Definition, CharaError> {
-        self.read_output::<DefinitionDto>(input)
+        Definitions::read_output::<DefinitionDto>(input)
             .map(|read_output| DefinitionDto::map(read_output.output, read_output.location))
     }
+
     fn save(&self, definition: &Definition) -> Result<(), CharaError> {
         let path = create_path("chara_results", None)?;
+        info!("Save result at {path}");
         serde_json::to_writer(
             File::create(path).map_err(CharaError::IO)?,
             &DefinitionDto::from_definition(definition),
@@ -100,7 +108,7 @@ impl ForeignDefinitions for Definitions {
                         path.clone(),
                     ]))
                     .and_then(|_output| {
-                        self.read_output::<ProcessorResultDto>(&DefinitionInput::File(path))
+                        Definitions::read_output::<ProcessorResultDto>(&DefinitionInput::File(path))
                     })
                     .map(|result| ProcessorResult {
                         definition: result.output.definition.map(|def| def.map(result.location)),

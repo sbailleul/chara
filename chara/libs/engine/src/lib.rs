@@ -33,7 +33,7 @@ pub fn run(
             .write()
             .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
         if let None = foreign_definition.output {
-            foreign_definition.output = definition_output;
+            foreign_definition.output.merge(&definition_output);
         }
     }
     let contexts = definition.processors_contexts();
@@ -65,15 +65,15 @@ pub fn run(
         {
             if let Some(edge) = metadata.edges.get_mut(&edge_context.name) {
                 if let Ok(src_edge) = edge.edge.read() {
-                    if let Some(definition) = src_edge.definition.as_ref() {
-                        if let Ok(definition) = definition.read() {
-                            if let Some(definition) = definition.output.as_ref() {
-                                result_definition.merge(definition);
+                    if let Some(foreign_definition) = src_edge.definition.as_ref() {
+                        if let Ok(foreign_definition) = foreign_definition.read() {
+                            if let Some(foreign_definition) = foreign_definition.output.as_ref() {
+                                result_definition.merge(foreign_definition);
                             }
                         }
                     }
                 }
-                edge.definition = Some(result_definition);
+                edge.definition.merge(&Some(result_definition));
             }
         }
     }
@@ -111,7 +111,7 @@ fn get_definitions(
                 .join()
                 .map_err(|_err| CharaError::Thread(ThreadError::Join))
                 .and_then(|res| res)
-                .inspect_err(|err| error!("{err}"))
+                .inspect_err(|err| error!("get_definitions {err}"))
         })
         .flatten()
         .collect()
@@ -136,7 +136,7 @@ fn enrich(
                 .join()
                 .map_err(|_err| CharaError::Thread(ThreadError::Join))
                 .and_then(|res| res)
-                .inspect_err(|err| error!("{err}"))
+                .inspect_err(|err| error!("enrich {err}"))
         })
         .flatten()
         .collect()

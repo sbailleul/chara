@@ -15,6 +15,7 @@ use crate::{definition::{
 impl DefinitionDto {
     pub fn from_definition(definition: &Definition) -> Self {
         DefinitionDto {
+            id: Some(definition.id.clone()),
             name: definition.name.clone(),
             location: definition.location.clone(),
             metadata: Self::read_metadata(definition),
@@ -171,6 +172,7 @@ impl DefinitionDto {
                                         .definition
                                         .as_ref()
                                         .map(DefinitionDto::from_definition),
+                                        
                                     environments: from_environments(edge.environments.clone()),
                                     other: edge.other.clone(),
                                     r#ref: k.clone(),

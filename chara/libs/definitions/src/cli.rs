@@ -65,6 +65,7 @@ pub trait Cli: Inputs {
         additional_arguments: Option<Vec<String>>,
     ) -> Result<String, CharaError> {
         self.command(additional_arguments).and_then(|mut cmd| {
+            info!("Run command");
             cmd.output()
                 .map_err(CharaError::IO)
                 .and_then(|output| {

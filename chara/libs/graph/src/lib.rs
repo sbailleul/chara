@@ -8,9 +8,8 @@ mod from_definition;
 pub mod graph;
 
 pub fn create_graph(input: &DefinitionInput) -> Result<(), CharaError> {
-    let definitions = Definitions {};
     let file_path = create_path("../../app/src/assets", Some("graph"))?;
-    definitions.read(input).and_then(|definition| {
+    Definitions::read(input).and_then(|definition| {
         serde_json::to_writer(
             File::create(file_path).map_err(CharaError::IO)?,
             &Graph::from_definition(definition),

@@ -1,6 +1,9 @@
-use common::{merge::{Merge, Overwrite}, thread::Readonly};
+use common::{
+    merge::{Merge, Overwrite},
+    thread::Readonly,
+};
 use serde_json::{Map, Value};
-use std::{collections::HashMap, hash::Hasher};
+use std::collections::HashMap;
 
 use crate::{
     cli::{Argument, Environment},
@@ -20,7 +23,7 @@ pub struct Tag {
     pub other: Value,
 }
 
-impl Merge for Tag{
+impl Merge for Tag {
     fn merge(&mut self, other: &Self) {
         self.label.overwrite(&other.label);
         self.other.merge(&other.other);
@@ -36,7 +39,8 @@ pub struct EdgeOverride {
     pub other: Map<String, Value>,
     pub definition: Option<Definition>,
 }
-impl Merge for EdgeOverride{
+
+impl Merge for EdgeOverride {
     fn merge(&mut self, other: &Self) {
         self.arguments.merge(&other.arguments);
         self.environments.merge(&other.environments);
@@ -52,7 +56,7 @@ pub struct Metadata {
     pub other: Map<String, Value>,
     pub processor: Option<ProcessorOverride>,
 }
-impl Merge for Metadata{
+impl Merge for Metadata {
     fn merge(&mut self, other: &Self) {
         self.edges.merge(&other.edges);
         self.tags.merge(&other.tags);
@@ -68,7 +72,7 @@ pub struct Edge {
     pub other: Map<String, Value>,
 }
 
-impl Merge for Edge{
+impl Merge for Edge {
     fn merge(&mut self, other: &Self) {
         self.definition.merge(&other.definition);
         self.processor.merge(&other.processor);
@@ -84,7 +88,7 @@ pub struct Install {
     pub current_directory: Option<String>,
 }
 
-impl Merge for Install{
+impl Merge for Install {
     fn merge(&mut self, other: &Self) {
         self.arguments.merge(&other.arguments);
         self.program = other.program.clone();
@@ -93,10 +97,10 @@ impl Merge for Install{
     }
 }
 
-
 #[derive(Debug, Clone)]
 pub struct Definition {
     pub name: String,
+    pub id: String,
     pub location: Option<String>,
     pub metadata: HashMap<String, Readonly<Metadata>>,
     pub edges: HashMap<String, Readonly<Edge>>,

@@ -117,7 +117,7 @@ pub struct InstallDto {
     pub arguments: Vec<String>,
     #[serde(default)]
     pub environments: Vec<EnvironmentDto>,
-    #[serde(rename(deserialize = "currentDirectory"))]
+    #[serde(rename(deserialize = "currentDirectory", serialize = "currentDirectory"))]
     pub current_directory: Option<String>,
 }
 
@@ -147,7 +147,7 @@ pub struct ProcessorDto {
     pub environments: Vec<EnvironmentDto>,
     pub program: String,
     pub install: Option<InstallDto>,
-    #[serde(rename(deserialize = "currentDirectory"))]
+    #[serde(rename(deserialize = "currentDirectory", serialize = "currentDirectory"))]
     pub current_directory: Option<String>,
 }
 #[derive(Debug, Deserialize, Serialize, Hash, Clone)]
@@ -168,6 +168,7 @@ pub enum ReferenceOrObjectDto<Value> {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DefinitionDto {
+    pub id: Option<String>,
     pub name: String,
     pub location: Option<String>,
     #[serde(default)]

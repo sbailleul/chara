@@ -9,9 +9,10 @@ fn main() {
 
     let definitions: Arc<dyn Definitions> = Arc::new(DefinitionsImpl {});
 
-    let definition = definitions.get(&DefinitionInput::File(
-        "../../examples/chara.json".to_string(),
-    ));
+    let definition = DefinitionsImpl::get(
+        "/home/sbailleul/code/chara/examples/chara.json".to_string(),
+        // "/home/sbailleul/code/chara/chara/cli/chara_results/test.json".to_string(),
+    );
     if let Ok(definition) = definition {
         run(definition, definitions);
     }
