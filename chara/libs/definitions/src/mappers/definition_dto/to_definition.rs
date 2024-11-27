@@ -2,8 +2,8 @@ use std::{collections::HashMap, path, sync::Arc};
 
 use engine::{
     definition::{definition::{
-        Definition, Edge, EdgeOverride, Install, Metadata, Tag,
-    }, foreign_definition::ForeignDefinition, input::DefinitionInput},
+        Definition, Install, Metadata, Tag,
+    }, edge::{Edge, EdgeOverride}, foreign_definition::ForeignDefinition, input::DefinitionInput},
     processor::{Processor, ProcessorOverride},
 };
 use serde_json::Value;
@@ -43,6 +43,7 @@ impl DefinitionDto {
     }
     pub fn map(self, location: Option<String>) -> Definition {
         let mut definition = Definition {
+            parent: None,
             id: self.id.clone().unwrap_or(Uuid::new_v4().to_string()),
             location: self.location.clone().or(location),
             name: self.name.clone(),

@@ -13,7 +13,10 @@ use crate::{
     processor::{Processor, ProcessorOverride},
 };
 
-use super::foreign_definition::ForeignDefinition;
+use super::{
+    edge::{Edge, EdgeOverride},
+    foreign_definition::ForeignDefinition,
+};
 
 #[derive(Debug, Clone)]
 pub struct Tag {
@@ -31,24 +34,7 @@ impl Merge for Tag {
         self.tags.merge(&other.tags);
     }
 }
-#[derive(Debug, Clone)]
-pub struct EdgeOverride {
-    pub arguments: Vec<Argument>,
-    pub environments: Vec<Environment>,
-    pub edge: Readonly<Edge>,
-    pub other: Map<String, Value>,
-    pub definition: Option<Definition>,
-}
 
-impl Merge for EdgeOverride {
-    fn merge(&mut self, other: &Self) {
-        self.arguments.merge(&other.arguments);
-        self.environments.merge(&other.environments);
-        self.edge.merge(&other.edge);
-        self.other.merge(&other.other);
-        self.definition.merge(&other.definition);
-    }
-}
 #[derive(Debug, Clone)]
 pub struct Metadata {
     pub edges: HashMap<String, EdgeOverride>,
@@ -62,21 +48,6 @@ impl Merge for Metadata {
         self.tags.merge(&other.tags);
         self.other.merge(&other.other);
         self.processor.merge(&other.processor);
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Edge {
-    pub definition: Option<Readonly<ForeignDefinition>>,
-    pub processor: Option<ProcessorOverride>,
-    pub other: Map<String, Value>,
-}
-
-impl Merge for Edge {
-    fn merge(&mut self, other: &Self) {
-        self.definition.merge(&other.definition);
-        self.processor.merge(&other.processor);
-        self.other.merge(&other.other);
     }
 }
 
@@ -99,6 +70,7 @@ impl Merge for Install {
 
 #[derive(Debug, Clone)]
 pub struct Definition {
+    pub parent: Option<Readonly<Definition>>,
     pub name: String,
     pub id: String,
     pub location: Option<String>,
@@ -112,6 +84,24 @@ pub struct Definition {
 }
 
 impl Definition {
+    fn find_edge(&self, reference: &String) -> Option<Readonly<Edge>> {
+        let mut segments = reference.split("/").collect::<Vec<&str>>();
+        self.find_edge_by_segment(segments)
+    }
+    fn find_edge_by_segment(&self, mut segments: Vec<&str>) -> Option<Readonly<Edge>> {
+        if let Some(segment) = segments.pop() {
+            if let Some(edge) = self.edges.get(segment) {
+                return Some(edge.clone());
+            }
+        }
+        if segments.len() > 0 {
+            if let Some(Ok(parent)) = self.parent.as_ref().map(|parent| parent.read()) {
+                return parent.find_edge_by_segment(segments);
+            }
+        }
+        None
+    }
+
     pub fn processors_contexts(&self) -> Vec<ProcessorContext> {
         let definition_contexts = self.metadata.iter().map(|(metadata_key, metadata_value)| {
             metadata_value.read().ok().map(|metadata_lock| {

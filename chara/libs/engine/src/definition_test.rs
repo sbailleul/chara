@@ -2,13 +2,17 @@
 mod definition {
     use std::{collections::HashMap, sync::Arc, vec};
 
+    use common::thread::readonly;
     use map_macro::hash_map;
     use serde_json::{Map, Value};
-    use common::thread::readonly;
 
     use crate::{
         contexts::{ContextDto, DefinitionContextDto, WritePermissionsDto},
-        definition::definition::{Definition, Edge, EdgeOverride, Metadata}, processor::{Processor, ProcessorOverride},
+        definition::{
+            definition::{Definition, Metadata},
+            edge::{Edge, EdgeOverride},
+        },
+        processor::{Processor, ProcessorOverride},
     };
 
     #[test]
@@ -39,6 +43,7 @@ mod definition {
         });
 
         let definition = Definition {
+            parent: None,
             id: "123".to_string(),
             location: None,
             name: "Test".to_string(),
@@ -58,8 +63,11 @@ mod definition {
             location: None,
             write: WritePermissionsDto::both(),
             processor_reference: "reference".to_string(),
-            edge: Some(ContextDto::new("test_edge".to_string(),  Map::<String, Value>::new())),
-            metadata: ContextDto::new("test_metadata".to_string(),  Map::<String, Value>::new()),
+            edge: Some(ContextDto::new(
+                "test_edge".to_string(),
+                Map::<String, Value>::new(),
+            )),
+            metadata: ContextDto::new("test_metadata".to_string(), Map::<String, Value>::new()),
         };
         assert_eq!(contexts[0].definition, expected_definition);
         assert!(Arc::ptr_eq(
@@ -68,4 +76,3 @@ mod definition {
         ));
     }
 }
-

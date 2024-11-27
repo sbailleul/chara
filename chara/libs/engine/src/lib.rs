@@ -3,7 +3,11 @@ use std::{
     thread::{self},
 };
 
-use common::{merge::Merge, thread::Readonly, ThreadError};
+use common::{
+    merge::Merge,
+    thread::{readonly, Readonly},
+    ThreadError,
+};
 use contexts::ProcessorContext;
 use definition::{
     definition::Definition, foreign_definition::ForeignDefinition, input::DefinitionInput,
@@ -27,17 +31,19 @@ pub fn run(
     definition: Definition,
     definitions: Arc<dyn Definitions>,
 ) -> Result<Definition, CharaError> {
-    process_definition(&definition, &definitions)?;
+    let definition = process_definition(readonly(definition.clone()), &definitions)?;
     definitions.save(&definition)?;
-
     Ok(definition)
 }
 
 fn process_definition(
-    definition: &Definition,
+    definition: Readonly<Definition>,
     definitions: &Arc<dyn Definitions>,
-) -> Result<(), CharaError> {
-    let results = get_definitions(definition, definitions);
+) -> Result<Definition, CharaError> {
+    let definition_value = definition
+        .read()
+        .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
+    let results = get_definitions(&definition_value, definitions);
     for (foreign_definition, definition_output) in results {
         let mut foreign_definition = foreign_definition
             .write()
@@ -46,13 +52,15 @@ fn process_definition(
             foreign_definition.output.merge(&definition_output);
         }
     }
-    let contexts = definition.processors_contexts();
+    let contexts = definition_value.processors_contexts();
     let results = enrich(contexts, definitions.clone());
-    handle_results(results, definitions)?;
-    Ok(())
+
+    handle_results(definition.clone(), results, definitions)?;
+    Ok(definition_value.to_owned())
 }
 
 fn handle_results(
+    source_definition: Readonly<Definition>,
     results: Vec<(ProcessorContext, ProcessorResult)>,
     definitions: &Arc<dyn Definitions>,
 ) -> Result<(), CharaError> {
@@ -91,8 +99,9 @@ fn handle_results(
                     }
                 }
                 edge.definition.merge(&Some(result_definition));
-                if let Some(definition) = edge.definition.as_ref() {
-                    process_definition(definition, definitions)?
+                if let Some(definition) = edge.definition.as_mut() {
+                    definition.parent = Some(source_definition.clone());
+                    *definition = process_definition(readonly(definition.clone()), definitions)?;
                 }
             }
         }
