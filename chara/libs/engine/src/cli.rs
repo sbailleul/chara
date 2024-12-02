@@ -2,15 +2,16 @@ use std::{collections::HashMap, hash::Hash};
 
 use common::thread::Readonly;
 
+
 #[derive(Debug, Clone)]
-pub enum Argument {
-    Value(String),
+pub enum Arguments {
+    Value(Vec<String>),
     Reference {
         name: String,
         arguments: Readonly<Vec<String>>,
     },
 }
-impl PartialEq for Argument {
+impl PartialEq for Arguments {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Value(l0), Self::Value(r0)) => l0 == r0,
@@ -21,12 +22,12 @@ impl PartialEq for Argument {
         }
     }
 }
-impl Eq for Argument {}
-impl Hash for Argument {
+impl Eq for Arguments {}
+impl Hash for Arguments {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self {
-            Argument::Value(v) => v.hash(state),
-            Argument::Reference { arguments, name } => {
+            Arguments::Value(v) => v.hash(state),
+            Arguments::Reference { arguments, name } => {
                 if let Ok(v) = arguments.read() {
                     v.hash(state);
                 }
@@ -36,11 +37,11 @@ impl Hash for Argument {
     }
 }
 
-impl Argument {
+impl Arguments {
     pub fn unwrap(&self) -> Vec<String> {
         match self {
-            Argument::Value(arg) => vec![arg.clone()],
-            Argument::Reference { arguments, .. } => {
+            Arguments::Value(arg) => arg.clone(),
+            Arguments::Reference { arguments, .. } => {
                 arguments.read().map_or(vec![], |args| args.clone())
             }
         }

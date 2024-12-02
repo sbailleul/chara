@@ -21,6 +21,8 @@ pub mod definition;
 mod definition_test;
 pub mod errors;
 pub mod processor;
+pub mod draft;
+pub mod reference_value;
 pub trait Definitions: Send + Sync {
     fn get(&self, definition: &DefinitionInput) -> Result<Definition, CharaError>;
     fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, CharaError>;

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use serde_json::{Map, Value};
 use common::{merge::Merge, thread::Readonly};
 
-use crate::{cli::{Argument, Environment}, definition::definition::{Definition, Install}};
+use crate::{cli::{Arguments, Environment}, definition::definition::{Definition, Install}};
 
 #[derive(Debug)]
 pub struct Enrichment {
@@ -18,7 +18,7 @@ pub struct ProcessorResult {
 
 #[derive(Debug, Clone)]
 pub struct Processor {
-    pub arguments: Vec<Argument>,
+    pub arguments: Vec<Arguments>,
     pub program: String,
     pub install: Option<Install>,
     pub environments: Vec<Environment>,
@@ -34,7 +34,7 @@ impl Merge for Processor{
 
 #[derive(Debug, Clone)]
 pub struct ProcessorOverride {
-    pub arguments: Vec<Argument>,
+    pub arguments: Vec<Arguments>,
     pub environments: Vec<Environment>,
     pub processor: Readonly<Processor>,
     pub reference: String,
@@ -49,7 +49,7 @@ impl ProcessorOverride {
         }
     }
 
-    pub fn from_with(&self, arguments: Vec<Argument>, environments: Vec<Environment>) -> Self {
+    pub fn from_with(&self, arguments: Vec<Arguments>, environments: Vec<Environment>) -> Self {
         let mut processor = self.clone();
         processor.arguments = [arguments, processor.arguments].concat();
         processor.environments = [environments, processor.environments].concat();

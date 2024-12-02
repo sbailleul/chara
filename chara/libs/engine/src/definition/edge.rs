@@ -1,7 +1,7 @@
 use common::{merge::Merge, thread::Readonly};
 use serde_json::{Map, Value};
 
-use crate::{cli::{Argument, Environment}, processor::ProcessorOverride};
+use crate::{cli::{Arguments, Environment}, processor::ProcessorOverride};
 
 use super::{definition::Definition, foreign_definition::ForeignDefinition};
 
@@ -23,7 +23,7 @@ impl Merge for Edge {
 
 #[derive(Debug, Clone)]
 pub struct EdgeOverride {
-    pub arguments: Vec<Argument>,
+    pub arguments: Vec<Arguments>,
     pub environments: Vec<Environment>,
     pub edge: Readonly<Edge>,
     pub other: Map<String, Value>,

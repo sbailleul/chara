@@ -6,7 +6,7 @@ use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 use crate::{
-    cli::{Argument, Environment},
+    cli::{Arguments, Environment},
     contexts::{
         ContextDto, DefinitionContextDto, EdgeContext, ProcessorContext, WritePermissionsDto,
     },
@@ -53,7 +53,7 @@ impl Merge for Metadata {
 
 #[derive(Debug, Clone)]
 pub struct Install {
-    pub arguments: Vec<Argument>,
+    pub arguments: Vec<Arguments>,
     pub program: String,
     pub environments: Vec<Environment>,
     pub current_directory: Option<String>,

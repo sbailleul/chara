@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
-use engine::cli::Argument;
 use common::thread::Readonly;
+use engine::cli::Arguments;
 
 use super::REFERENCE_PREFIX;
 
 pub fn to_arguments(
     dto_arguments: &Vec<String>,
     arguments: &HashMap<String, Readonly<Vec<String>>>,
-) -> Vec<Argument> {
+) -> Vec<Arguments> {
     dto_arguments
         .iter()
         .map(|argument| {
@@ -16,24 +16,27 @@ pub fn to_arguments(
                 arguments
                     .get(argument.trim_start_matches(REFERENCE_PREFIX))
                     .map(|v| v.clone())
-                    .map(|reference| Argument::Reference {
+                    .map(|arguments| Arguments::Reference {
                         name: argument.clone(),
-                        arguments: reference,
+                        arguments,
                     })
             } else {
-                Some(Argument::Value(argument.clone()))
+                Some(Arguments::Value(vec![argument.clone()]))
             }
         })
         .flatten()
         .collect()
 }
 
-pub fn from_arguments(arguments: Vec<Argument>) -> Vec<String> {
+pub fn from_arguments(arguments: Vec<Arguments>) -> Vec<String> {
     arguments
         .into_iter()
-        .map(|arg| match arg {
-            Argument::Value(arg) => arg,
-            Argument::Reference { name, .. } => name,
+        .flat_map(|arg| match arg {
+            Arguments::Value(arg) => arg,
+            Arguments::Reference { arguments, .. } => arguments
+                .read()
+                .map(|lock| (*lock).clone())
+                .unwrap_or(Vec::<String>::new()),
         })
         .collect()
 }

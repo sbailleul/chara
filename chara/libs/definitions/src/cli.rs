@@ -1,12 +1,12 @@
 use std::{collections::HashMap, fs::canonicalize, process::Command};
 
 use engine::{
-    cli::{Argument, Environment}, definition::definition::Install, errors::CharaError, processor::{Processor, ProcessorOverride}
+    cli::{Arguments, Environment}, definition::definition::Install, errors::CharaError, processor::{Processor, ProcessorOverride}
 };
 use log::info;
 use common::ThreadError;
 pub trait Inputs {
-    fn arguments(&self) -> Vec<Argument>;
+    fn arguments(&self) -> Vec<Arguments>;
     fn environments(&self) -> Vec<Environment>;
     fn flatten_arguments(&self) -> Vec<String> {
         self.arguments()
@@ -90,7 +90,7 @@ pub trait Cli: Inputs {
 }
 
 impl Inputs for Install {
-    fn arguments(&self) -> Vec<Argument> {
+    fn arguments(&self) -> Vec<Arguments> {
         self.arguments.clone()
     }
     fn environments(&self) -> Vec<Environment> {
@@ -107,7 +107,7 @@ impl Cli for Install {
 }
 
 impl Inputs for Processor {
-    fn arguments(&self) -> Vec<Argument> {
+    fn arguments(&self) -> Vec<Arguments> {
         self.arguments.clone()
     }
     fn environments(&self) -> Vec<Environment> {
@@ -125,7 +125,7 @@ impl Cli for Processor {
 }
 
 impl Inputs for ProcessorOverride {
-    fn arguments(&self) -> Vec<Argument> {
+    fn arguments(&self) -> Vec<Arguments> {
         self.processor
             .read()
             .map_or(vec![], |processor| processor.arguments())
