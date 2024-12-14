@@ -4,10 +4,7 @@ use common::{merge::Merge, thread::Readonly};
 use serde_json::{Map, Value};
 
 use crate::{
-    cli::{Arguments, Environment},
-    definition::definition::{CleanInstall, CleanDefinition, Install},
-    draft::draft_definition::DraftDefinition,
-    reference_value::ReferencedValue,
+    cli::{Arguments, Environment}, definition::install::CleanInstall, draft::draft_definition::DraftDefinition, reference_value::ReferencedValue
 };
 
 #[derive(Debug)]

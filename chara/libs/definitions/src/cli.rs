@@ -2,10 +2,7 @@ use std::{collections::HashMap, fs::canonicalize, process::Command};
 
 use common::ThreadError;
 use engine::{
-    cli::{Arguments, Environment},
-    definition::definition::{CleanInstall, Install},
-    errors::CharaError,
-    processor::{CleanProcessor, CleanProcessorOverride},
+    clean::clean_definition::CleanInstall, cli::{Arguments, Environment}, errors::CharaError, processor::{CleanProcessor, CleanProcessorOverride}
 };
 use log::info;
 pub trait Inputs {

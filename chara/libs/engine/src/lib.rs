@@ -3,16 +3,14 @@ use std::{
     thread::{self},
 };
 
+use clean::clean_definition::{CleanDefinition, CleanDefinitionInput, CleanForeignDefinition};
 use common::{
-    merge::Merge,
     thread::{readonly, Readonly},
     ThreadError,
 };
 use contexts::ProcessorContext;
-use definition::{
-    definition::CleanDefinition, foreign_definition::{CleanForeignDefinition, ForeignDefinition}, input::{CleanDefinitionInput, DefinitionInput},
-};
-use draft::draft_definition::{DraftDefinition, DraftForeignDefinition};
+
+use draft::draft_definition::DraftDefinition;
 use errors::CharaError;
 use log::error;
 use processor::ProcessorResult;
@@ -21,6 +19,7 @@ pub mod contexts;
 pub mod definition;
 mod definition_test;
 pub mod draft;
+pub mod clean;
 pub mod errors;
 pub mod processor;
 pub mod reference_value;
@@ -48,7 +47,7 @@ fn process_definition(
         .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
     let results = get_definitions(&definition_value, definitions);
     for (foreign_definition, definition_output) in results {
-        let mut foreign_definition = foreign_definition
+        let foreign_definition = foreign_definition
             .write()
             .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
         // TODO
@@ -89,7 +88,7 @@ fn handle_results(
                 metadata.other.append(&mut metadata_enrichment);
             }
         }
-        if let (Some(mut result_definition), Some(edge_context)) =
+        if let (Some(result_definition), Some(edge_context)) =
             (result.definition, context.definition.edge)
         {
             if let Some(edge) = metadata.edges.get_mut(&edge_context.name) {

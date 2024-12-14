@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use common::thread::Readonly;
 
-use crate::{definition::definition::{CleanMetadata, Metadata}, processor::{CleanProcessorOverride}};
+use crate::{ clean::clean_definition::CleanMetadata, processor::CleanProcessorOverride};
 
 #[derive(Debug)]
 pub struct ProcessorContext {

@@ -2,73 +2,31 @@ use common::{
     merge::{Merge, Overwrite},
     thread::Readonly,
 };
-use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 use crate::{
-    cli::{Arguments, Environment},
-    contexts::{
+    cli::{Arguments, Environment}, contexts::{
         ContextDto, DefinitionContextDto, EdgeContext, ProcessorContext, WritePermissionsDto,
-    },
-    processor::{CleanProcessor, CleanProcessorOverride},
-    reference_value::ReferencedValue,
+    }, definition::{edge::{Edge, EdgeOverride}, foreign_definition::ForeignDefinition, input::DefinitionInput, install::Install, metadata::Metadata, tag::Tag}, processor::{CleanProcessor, CleanProcessorOverride}, reference_value::ReferencedValue
 };
 
-use super::{
-    edge::{CleanEdge, CleanEdgeOverride, Edge, EdgeOverride},
-    foreign_definition::{CleanForeignDefinition, ForeignDefinition},
-};
+pub type CleanEdge = Edge<CleanProcessorOverride, CleanForeignDefinition>;
+pub type CleanDefinitionInput = DefinitionInput<CleanProcessorOverride>;
 
-#[derive(Debug, Clone)]
-pub struct Tag {
-    pub label: Option<String>,
-    pub tags: HashMap<String, Readonly<RefTag>>,
-    pub other: Value,
-}
-impl Merge for Tag{
-    fn merge(&mut self, other: &Self) {
-        self.label.overwrite(&other.label);
-        self.other.merge(&other.other);
-        self.tags.merge(&other.tags);
-    }
-}
-pub type RefTag = ReferencedValue<Tag>;
-
-
-
-#[derive(Debug, Clone)]
-pub struct Metadata<TEdge, TProcessor, TTag> {
-    pub edges: HashMap<String, TEdge>,
-    pub tags: HashMap<String, TTag>,
-    pub other: Map<String, Value>,
-    pub processor: Option<TProcessor>,
-}
-pub type CleanMetadata = Metadata<CleanEdgeOverride, CleanProcessorOverride, Readonly<RefTag>>;
-impl <TEdge: Merge + Clone, TProcessor: Merge+Clone, TTag: Merge + Clone> Merge for  Metadata<TEdge, TProcessor, TTag> {
-    fn merge(&mut self, other: &Self) {
-        self.edges.merge(&other.edges);
-        self.tags.merge(&other.tags);
-        self.other.merge(&other.other);
-        self.processor.merge(&other.processor);
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Install<TArguments, TEnvironment> {
-    pub arguments: Vec<TArguments>,
-    pub program: String,
-    pub environments: Vec<TEnvironment>,
-    pub current_directory: Option<String>,
-}
+pub type CleanForeignDefinition = ForeignDefinition<CleanDefinitionInput>;
+pub type CleanEdgeOverride = EdgeOverride<Arguments, Environment, Readonly<CleanEdge>>;
 pub type CleanInstall = Install<Arguments, Environment>;
-impl <TArguments: Merge + Clone, TEnvironment: Merge + Clone> Merge for Install<TArguments, TEnvironment> {
+pub type RefTag = ReferencedValue<Tag>;
+pub type CleanMetadata = Metadata<CleanEdgeOverride, CleanProcessorOverride, Readonly<RefTag>>;
+
+impl Merge for CleanForeignDefinition {
     fn merge(&mut self, other: &Self) {
-        self.arguments.merge(&other.arguments);
-        self.program = other.program.clone();
-        self.environments.merge(&other.environments);
-        self.current_directory.overwrite(&other.current_directory);
+        self.input.merge(&other.input);
+        // TODO
+        // self.output.merge(&other.output);
     }
 }
+
 
 #[derive(Debug, Clone)]
 pub struct CleanDefinition {
@@ -83,6 +41,19 @@ pub struct CleanDefinition {
     pub arguments: HashMap<String, Readonly<Vec<String>>>,
     pub environments: HashMap<String, Readonly<HashMap<String, String>>>,
     pub foreign_definitions: HashMap<String, Readonly<CleanForeignDefinition>>,
+}
+impl Merge for CleanDefinition {
+    fn merge(&mut self, other: &CleanDefinition) {
+        self.id = other.id.clone();
+        self.arguments.merge(&other.arguments);
+        self.environments.merge(&other.environments);
+        self.edges.merge(&other.edges);
+        self.foreign_definitions.merge(&other.foreign_definitions);
+        self.location.overwrite(&other.location);
+        self.metadata.merge(&other.metadata);
+        self.processors.merge(&other.processors);
+        self.tags.merge(&other.tags);
+    }
 }
 
 impl CleanDefinition {

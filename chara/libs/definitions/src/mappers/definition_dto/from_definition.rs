@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use engine::{
-    definition::definition::CleanDefinition,
-    errors::CharaError,
+    clean::clean_definition::CleanDefinition, errors::CharaError
 };
 use common::ThreadError;
 

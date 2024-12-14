@@ -1,15 +1,11 @@
-use std::{collections::HashMap, hash::Hash, path, sync::Arc};
+use std::{collections::HashMap, path, sync::Arc};
 
 use engine::{
-    definition::{
-        definition::{CleanDefinition, Install, Metadata, RefTag, Tag},
-        edge::{Edge, EdgeOverride},
-        foreign_definition::ForeignDefinition,
-        input::DefinitionInput,
-    },
-    processor::{CleanProcessorOverride, Processor},
+    clean::clean_definition::{CleanDefinition, RefTag}, definition::{
+        edge::{Edge, EdgeOverride}, foreign_definition::ForeignDefinition, input::DefinitionInput, install::Install, metadata::Metadata, tag::Tag
+    }, processor::{CleanProcessorOverride, Processor}
 };
-use serde_json::{de::Read, Value};
+use serde_json::Value;
 
 use common::thread::{readonly, Readonly};
 use uuid::Uuid;

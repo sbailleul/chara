@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use common::ThreadError;
 use engine::{
-    draft::draft_definition::DraftDefinition, errors::CharaError, reference_value::LazyRefOrValue,
+    draft::draft_definition::DraftDefinition, errors::CharaError,
 };
 
 use crate::{

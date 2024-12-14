@@ -6,12 +6,7 @@ use std::{
 
 use common::ThreadError;
 use engine::{
-    contexts::ProcessorContext,
-    definition::{definition::CleanDefinition, input::{CleanDefinitionInput, DefinitionInput}},
-    draft::draft_definition::DraftDefinition,
-    errors::CharaError,
-    processor::{Enrichment, ProcessorResult},
-    Definitions as ForeignDefinitions,
+    clean::clean_definition::{CleanDefinition, CleanDefinitionInput}, contexts::ProcessorContext, definition::input::DefinitionInput, draft::draft_definition::DraftDefinition, errors::CharaError, processor::{Enrichment, ProcessorResult}, Definitions as ForeignDefinitions
 };
 use log::info;
 use serde::Deserialize;

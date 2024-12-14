@@ -1,16 +1,8 @@
 use common::{merge::Merge, thread::Readonly};
 use serde_json::{Map, Value};
 
-use crate::{
-    cli::{Arguments, Environment},
-    processor::CleanProcessorOverride,
-};
+use crate::clean::clean_definition::CleanDefinition;
 
-use super::{
-    definition::CleanDefinition,
-    foreign_definition::{CleanForeignDefinition, ForeignDefinition},
-    input::CleanDefinitionInput,
-};
 
 #[derive(Debug, Clone)]
 pub struct Edge<TProcessorOverride, TForeignDefinition> {
@@ -18,7 +10,7 @@ pub struct Edge<TProcessorOverride, TForeignDefinition> {
     pub processor: Option<TProcessorOverride>,
     pub other: Map<String, Value>,
 }
-pub type CleanEdge = Edge<CleanProcessorOverride, CleanForeignDefinition>;
+
 
 impl<TProcessorOverride:  Merge + Clone, TForeignDefinition:  Merge + Clone> Merge for Edge<TProcessorOverride, TForeignDefinition> {
     fn merge(&mut self, other: &Self) {
@@ -36,7 +28,7 @@ pub struct EdgeOverride<TArguments, TEnvironment, TEdge> {
     pub other: Map<String, Value>,
     pub definition: Option<CleanDefinition>,
 }
-pub type CleanEdgeOverride = EdgeOverride<Arguments, Environment, Readonly<CleanEdge>>;
+
 
 impl<TArguments: Merge + Clone, TEnvironment: Merge + Clone, TEdge: Merge> Merge for EdgeOverride<TArguments, TEnvironment, TEdge> {
     fn merge(&mut self, other: &Self) {

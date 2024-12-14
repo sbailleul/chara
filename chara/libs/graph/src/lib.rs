@@ -1,7 +1,7 @@
 use std::fs::File;
 
 use definitions::definitions::{create_path, Definitions};
-use engine::{definition::input::{CleanDefinitionInput, DefinitionInput}, errors::CharaError};
+use engine::{ clean::clean_definition::CleanDefinitionInput, errors::CharaError};
 use graph::Graph;
 
 mod from_definition;

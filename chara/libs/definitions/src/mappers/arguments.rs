@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use common::thread::{Read, Readonly};
+use common::thread::Readonly;
 use engine::{
     cli::Arguments,
     draft::draft_definition::DraftArguments,

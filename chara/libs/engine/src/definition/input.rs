@@ -3,7 +3,6 @@ use std::borrow::BorrowMut;
 use common::merge::Merge;
 use serde_json::Value;
 
-use crate::processor::CleanProcessorOverride;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum DefinitionInput<TProcessor> {
@@ -12,7 +11,6 @@ pub enum DefinitionInput<TProcessor> {
     Value(Value),
     Processor(TProcessor),
 }
-pub type CleanDefinitionInput = DefinitionInput<CleanProcessorOverride>;
 impl<TProcessor: Merge + Clone> Merge for DefinitionInput<TProcessor> {
     fn merge(&mut self, other: &DefinitionInput<TProcessor>) {
         if let (DefinitionInput::Value(value), DefinitionInput::Value(other)) =

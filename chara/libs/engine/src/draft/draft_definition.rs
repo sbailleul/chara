@@ -1,15 +1,16 @@
 use std::collections::HashMap;
 
-use common::{merge::Merge, thread::Readonly};
-use serde_json::{Map, Value};
+use common::thread::Readonly;
+use serde_json::Map;
 
 use crate::{
-    cli::{Arguments, Environment},
     definition::{
-        definition::{CleanDefinition, Install, Metadata, RefTag, Tag},
         edge::{Edge, EdgeOverride},
         foreign_definition::ForeignDefinition,
         input::DefinitionInput,
+        install::Install,
+        metadata::Metadata,
+        tag::RefTag,
     },
     processor::{Processor, ProcessorOverride},
     reference_value::{LazyRef, LazyRefOrValue},
@@ -36,7 +37,8 @@ impl DraftProcessorOverride {
 
 pub type DraftEdge = Edge<DraftProcessorOverride, DraftForeignDefinition>;
 
-pub type DraftEdgeOverride = EdgeOverride<DraftArguments, DraftEnvironments, LazyRefOrValue<DraftEdge>>;
+pub type DraftEdgeOverride =
+    EdgeOverride<DraftArguments, DraftEnvironments, LazyRefOrValue<DraftEdge>>;
 impl DraftEdgeOverride {
     pub fn edge(edge: LazyRefOrValue<DraftEdge>) -> Self {
         Self {
@@ -49,7 +51,8 @@ impl DraftEdgeOverride {
     }
 }
 
-pub type DraftMetadata = Metadata<DraftEdgeOverride, DraftProcessorOverride, LazyRefOrValue<RefTag>>;
+pub type DraftMetadata =
+    Metadata<DraftEdgeOverride, DraftProcessorOverride, LazyRefOrValue<RefTag>>;
 
 #[derive(Debug, Clone)]
 pub struct DraftDefinition {

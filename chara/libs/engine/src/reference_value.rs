@@ -1,4 +1,4 @@
-use std::{alloc::Layout, borrow::BorrowMut, fmt::Debug, hash::Hash};
+use std::{borrow::BorrowMut, fmt::Debug, hash::Hash};
 
 use common::{
     merge::Merge,
