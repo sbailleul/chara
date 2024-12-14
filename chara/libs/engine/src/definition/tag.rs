@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
-use common::{merge::{Merge, Overwrite}, thread::Readonly};
+use common::{
+    merge::{Merge, Overwrite},
+    thread::Readonly,
+};
 use serde_json::Value;
 
-use crate::reference_value::ReferencedValue;
+use crate::clean::clean_definition::RefTag;
 
 #[derive(Debug, Clone)]
 pub struct Tag {
@@ -11,7 +14,7 @@ pub struct Tag {
     pub tags: HashMap<String, Readonly<RefTag>>,
     pub other: Value,
 }
-impl Merge for Tag{
+impl Merge for Tag {
     fn merge(&mut self, other: &Self) {
         self.label.overwrite(&other.label);
         self.other.merge(&other.other);

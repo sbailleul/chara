@@ -4,16 +4,13 @@ use common::thread::Readonly;
 use serde_json::Map;
 
 use crate::{
-    definition::{
+    clean::clean_definition::RefTag, definition::{
         edge::{Edge, EdgeOverride},
         foreign_definition::ForeignDefinition,
         input::DefinitionInput,
         install::Install,
         metadata::Metadata,
-        tag::RefTag,
-    },
-    processor::{Processor, ProcessorOverride},
-    reference_value::{LazyRef, LazyRefOrValue},
+    }, processor::{Processor, ProcessorOverride}, reference_value::{LazyRef, LazyRefOrValue}
 };
 pub type DraftArguments = LazyRefOrValue<Vec<String>>;
 pub type DraftEnvironments = LazyRefOrValue<HashMap<String, String>>;

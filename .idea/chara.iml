@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="EMPTY_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/chara/cli/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/chara/libs/common/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/chara/libs/definitions/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/chara/libs/engine/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/chara/libs/graph/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/scrappers/github/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/scrappers/http/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/chara/cli/target" />
+      <excludeFolder url="file://$MODULE_DIR$/chara/target" />
+      <excludeFolder url="file://$MODULE_DIR$/scrappers/http/target" />
+      <excludeFolder url="file://$MODULE_DIR$/scrappers/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>
