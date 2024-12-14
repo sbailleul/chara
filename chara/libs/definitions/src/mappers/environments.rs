@@ -4,7 +4,7 @@ use common::thread::Readonly;
 use engine::{
     cli::Environment,
     draft::draft_definition::DraftEnvironments,
-    reference_value::{LazyRefValue, ReferencedValue},
+    reference_value::{LazyRefOrValue, ReferencedValue},
 };
 
 use crate::definition::EnvironmentDto;
@@ -27,9 +27,9 @@ pub fn from_draft_environments(environments: Vec<DraftEnvironments>) -> Vec<Envi
     environments
         .into_iter()
         .map(|env| match env {
-            LazyRefValue::Ref(reference) => EnvironmentDto::Reference(reference),
-            LazyRefValue::ReferencedValue(ReferencedValue { r#ref, value: _ }) => EnvironmentDto::Reference(r#ref),
-            LazyRefValue::Value(value) => EnvironmentDto::Value(value),
+            LazyRefOrValue::Ref(reference) => EnvironmentDto::Reference(reference),
+            LazyRefOrValue::ReferencedValue(ReferencedValue { r#ref, value: _ }) => EnvironmentDto::Reference(r#ref),
+            LazyRefOrValue::Value(value) => EnvironmentDto::Value(value),
         })
         .collect()
 }
@@ -41,14 +41,14 @@ pub fn to_environments(
     to_draft_environments(dto_environments, environments)
         .into_iter()
         .map(|environment| match environment {
-            LazyRefValue::Ref(_) => None,
-            LazyRefValue::ReferencedValue(ref_value) => {
+            LazyRefOrValue::Ref(_) => None,
+            LazyRefOrValue::ReferencedValue(ref_value) => {
                 Some(Environment::ReferencedValue(ReferencedValue {
                     r#ref: ref_value.r#ref,
                     value: ref_value.value,
                 }))
             }
-            LazyRefValue::Value(value) => Some(Environment::Value(value)),
+            LazyRefOrValue::Value(value) => Some(Environment::Value(value)),
         })
         .flatten()
         .collect()
@@ -63,12 +63,12 @@ pub fn to_draft_environments(
             EnvironmentDto::Reference(reference) => environments
                 .get(reference.trim_start_matches(REFERENCE_PREFIX))
                 .map(|v| {
-                    LazyRefValue::ReferencedValue(ReferencedValue {
+                    LazyRefOrValue::ReferencedValue(ReferencedValue {
                         r#ref: reference.clone(),
                         value: v.clone(),
                     })
                 })
-                .or(Some(LazyRefValue::Ref(reference.clone()))),
+                .or(Some(LazyRefOrValue::Ref(reference.clone()))),
             EnvironmentDto::Value(hash_map) => Some(DraftEnvironments::Value(hash_map.clone())),
         })
         .flatten()

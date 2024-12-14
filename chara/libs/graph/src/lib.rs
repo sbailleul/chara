@@ -1,13 +1,13 @@
 use std::fs::File;
 
 use definitions::definitions::{create_path, Definitions};
-use engine::{definition::input::DefinitionInput, errors::CharaError};
+use engine::{definition::input::{CleanDefinitionInput, DefinitionInput}, errors::CharaError};
 use graph::Graph;
 
 mod from_definition;
 pub mod graph;
 
-pub fn create_graph(input: &DefinitionInput) -> Result<(), CharaError> {
+pub fn create_graph(input: &CleanDefinitionInput) -> Result<(), CharaError> {
     let file_path = create_path("../../app/src/assets", Some("graph"))?;
     Definitions::read(input).and_then(|definition| {
         serde_json::to_writer(

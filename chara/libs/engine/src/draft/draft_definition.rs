@@ -12,33 +12,33 @@ use crate::{
         input::DefinitionInput,
     },
     processor::{Processor, ProcessorOverride},
-    reference_value::LazyRefValue,
+    reference_value::{LazyRef, LazyRefOrValue},
 };
-pub type DraftArguments = LazyRefValue<Vec<String>>;
-pub type DraftEnvironments = LazyRefValue<HashMap<String, String>>;
+pub type DraftArguments = LazyRefOrValue<Vec<String>>;
+pub type DraftEnvironments = LazyRefOrValue<HashMap<String, String>>;
 pub type DraftDefinitionInput = DefinitionInput<DraftProcessorOverride>;
 pub type DraftForeignDefinition = ForeignDefinition<DraftDefinitionInput>;
 pub type DraftInstall = Install<DraftArguments, DraftEnvironments>;
 
 pub type DraftProcessor = Processor<DraftArguments, DraftInstall, DraftEnvironments>;
 pub type DraftProcessorOverride =
-    ProcessorOverride<DraftArguments, DraftEnvironments, LazyRefValue<DraftProcessor>>;
+    ProcessorOverride<DraftArguments, DraftEnvironments, Option<LazyRef<DraftProcessor>>>;
 
 impl DraftProcessorOverride {
-    pub fn processor(processor: LazyRefValue<DraftProcessor>) -> Self {
+    pub fn processor(processor: LazyRef<DraftProcessor>) -> Self {
         Self {
             arguments: vec![],
             environments: vec![],
-            processor,
+            processor: Some(processor),
         }
     }
 }
 
 pub type DraftEdge = Edge<DraftProcessorOverride, DraftForeignDefinition>;
 
-pub type DraftEdgeOverride = EdgeOverride<DraftArguments, DraftEnvironments, LazyRefValue<DraftEdge>>;
+pub type DraftEdgeOverride = EdgeOverride<DraftArguments, DraftEnvironments, LazyRefOrValue<DraftEdge>>;
 impl DraftEdgeOverride {
-    pub fn edge(edge: LazyRefValue<DraftEdge>) -> Self {
+    pub fn edge(edge: LazyRefOrValue<DraftEdge>) -> Self {
         Self {
             arguments: vec![],
             definition: None,
@@ -49,7 +49,7 @@ impl DraftEdgeOverride {
     }
 }
 
-pub type DraftMetadata = Metadata<DraftEdgeOverride, DraftProcessorOverride, LazyRefValue<RefTag>>;
+pub type DraftMetadata = Metadata<DraftEdgeOverride, DraftProcessorOverride, LazyRefOrValue<RefTag>>;
 
 #[derive(Debug, Clone)]
 pub struct DraftDefinition {

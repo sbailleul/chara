@@ -1,14 +1,18 @@
 use std::collections::HashMap;
 
 use common::ThreadError;
-use engine::{draft::draft_definition::DraftDefinition, errors::CharaError, reference_value::LazyRefValue};
+use engine::{
+    draft::draft_definition::DraftDefinition, errors::CharaError, reference_value::LazyRefOrValue,
+};
 
 use crate::{
     definition::{
         DefinitionDto, EdgeDto, ForeignDefinitionDto, InstallDto, MetadataDto, MetadataEdge,
         ProcessorDto, ProcessorOverrideDto, ReferenceOrObjectDto, TagDto,
     },
-    mappers::{arguments::{from_draft_arguments}, environments::{from_draft_environments, from_draft_environments}, tags::from_tags},
+    mappers::{
+        arguments::from_draft_arguments, environments::from_draft_environments, tags::from_tags,
+    },
 };
 
 impl DefinitionDto {
@@ -48,12 +52,14 @@ impl DefinitionDto {
                     .transpose()?
                     .flatten();
                 let processor = edge.processor.as_ref().map(|processor| {
-                    &processor.processor
                     ReferenceOrObjectDto::Object(ProcessorOverrideDto {
                         arguments: from_draft_arguments(processor.arguments.clone()),
                         environments: from_draft_environments(processor.environments.clone()),
-                        reference: processor.processor.,
-                    })q
+                        reference: processor
+                            .processor
+                            .as_ref()
+                            .map(|processor| processor.reference()),
+                    })
                 });
                 Ok::<(String, EdgeDto), CharaError>((
                     k.clone(),
@@ -109,7 +115,6 @@ impl DefinitionDto {
                 Ok::<(String, ProcessorDto), CharaError>((
                     k.clone(),
                     ProcessorDto {
-                        
                         arguments: from_draft_arguments(processor.arguments.clone()),
                         current_directory: processor.current_directory.clone(),
                         environments: from_draft_environments(processor.environments.clone()),
@@ -152,19 +157,17 @@ impl DefinitionDto {
                                     environments: from_draft_environments(
                                         processor.environments.clone(),
                                     ),
-                                    reference: processor.r#ref.clone(),
+                                    reference: processor
+                                        .processor
+                                        .as_ref()
+                                        .map(|processor| processor.reference()),
                                 },
                             )
                         }),
                         tags: metadata
                             .tags
                             .iter()
-                            .map(|(k, tag)| {
-                                let tag = tag
-                                    .read()
-                                    .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
-                                Ok::<String, CharaError>(tag.r#ref.clone())
-                            })
+                            .map(|(_, tag)| tag.reference())
                             .flatten()
                             .collect(),
                         edges: metadata
@@ -178,7 +181,9 @@ impl DefinitionDto {
                                         .as_ref()
                                         .map(DefinitionDto::from_definition),
 
-                                    environments: from_draft_environments(edge.environments.clone()),
+                                    environments: from_draft_environments(
+                                        edge.environments.clone(),
+                                    ),
                                     other: edge.other.clone(),
                                     r#ref: k.clone(),
                                 })

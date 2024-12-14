@@ -6,7 +6,7 @@ use engine::{
         DraftDefinition, DraftDefinitionInput, DraftEdge, DraftEdgeOverride, DraftInstall,
         DraftMetadata, DraftProcessor, DraftProcessorOverride,
     },
-    reference_value::{LazyRefValue, ReferencedValue},
+    reference_value::{LazyRef, LazyRefOrValue, ReferencedValue},
 };
 use serde_json::Value;
 
@@ -125,7 +125,7 @@ impl DefinitionDto {
                                         ) {
                                             Some(DefinitionInput::Processor(
                                                 DraftProcessorOverride::processor(
-                                                    LazyRefValue::referenced_value(
+                                                    LazyRef::referenced_value(
                                                         text_definition.clone(),
                                                         processor.clone(),
                                                     ),
@@ -133,7 +133,7 @@ impl DefinitionDto {
                                             ))
                                         } else {
                                             Some(DefinitionInput::Processor(
-                                                DraftProcessorOverride::processor(LazyRefValue::Ref(
+                                                DraftProcessorOverride::processor(LazyRef::Ref(
                                                     text_definition.clone(),
                                                 )),
                                             ))
@@ -193,14 +193,14 @@ impl DefinitionDto {
                                         .edges
                                         .get(reference.trim_start_matches(REFERENCE_PREFIX))
                                         .map(|edge| {
-                                            DraftEdgeOverride::edge(LazyRefValue::ReferencedValue(
+                                            DraftEdgeOverride::edge(LazyRefOrValue::ReferencedValue(
                                                 ReferencedValue {
                                                     r#ref: reference.clone(),
                                                     value: edge.clone(),
                                                 },
                                             ))
                                         })
-                                        .unwrap_or(DraftEdgeOverride::edge(LazyRefValue::Ref(
+                                        .unwrap_or(DraftEdgeOverride::edge(LazyRefOrValue::Ref(
                                             reference.clone(),
                                         ))),
                                 ),
@@ -222,7 +222,7 @@ impl DefinitionDto {
                                                 &metadata_edge.environments,
                                                 &definition.environments,
                                             ),
-                                            edge: LazyRefValue::referenced_value(
+                                            edge: LazyRefOrValue::referenced_value(
                                                 metadata_edge.r#ref.clone(),
                                                 edge.clone(),
                                             ),
@@ -241,7 +241,7 @@ impl DefinitionDto {
                                                 &metadata_edge.environments,
                                                 &definition.environments,
                                             ),
-                                            edge: LazyRefValue::Ref(metadata_edge.r#ref.clone()),
+                                            edge: LazyRefOrValue::Ref(metadata_edge.r#ref.clone()),
                                             other: metadata_edge.other.clone(),
                                             definition: metadata_edge
                                                 .definition
@@ -261,13 +261,13 @@ impl DefinitionDto {
                                     .map(|found_tag| {
                                         (
                                             tag.clone(),
-                                            LazyRefValue::referenced_value(
+                                            LazyRefOrValue::referenced_value(
                                                 tag.clone(),
                                                 found_tag.clone(),
                                             ),
                                         )
                                     })
-                                    .unwrap_or((tag.clone(), LazyRefValue::Ref(tag.clone())))
+                                    .unwrap_or((tag.clone(), LazyRefOrValue::Ref(tag.clone())))
                             })
                             .collect(),
                         other: metadata.other.clone(),
