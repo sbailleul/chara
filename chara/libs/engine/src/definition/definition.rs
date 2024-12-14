@@ -10,39 +10,41 @@ use crate::{
     contexts::{
         ContextDto, DefinitionContextDto, EdgeContext, ProcessorContext, WritePermissionsDto,
     },
-    processor::{Processor, ProcessorOverride},
+    processor::{CleanProcessor, CleanProcessorOverride},
+    reference_value::ReferencedValue,
 };
 
 use super::{
-    edge::{Edge, EdgeOverride},
-    foreign_definition::ForeignDefinition,
+    edge::{CleanEdge, CleanEdgeOverride, Edge, EdgeOverride},
+    foreign_definition::{CleanForeignDefinition, ForeignDefinition},
 };
 
 #[derive(Debug, Clone)]
 pub struct Tag {
-    pub reference: String,
     pub label: Option<String>,
-    pub tags: HashMap<String, Readonly<Tag>>,
+    pub tags: HashMap<String, Readonly<RefTag>>,
     pub other: Value,
 }
+pub type RefTag = ReferencedValue<Tag>;
 
-impl Merge for Tag {
+impl Merge for RefTag {
     fn merge(&mut self, other: &Self) {
-        self.label.overwrite(&other.label);
-        self.other.merge(&other.other);
-        self.reference = other.reference.clone();
-        self.tags.merge(&other.tags);
+        self.value.label.overwrite(&other.value.label);
+        self.value.other.merge(&other.value.other);
+        self.r#ref = other.r#ref.clone();
+        self.value.tags.merge(&other.value.tags);
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct Metadata {
-    pub edges: HashMap<String, EdgeOverride>,
-    pub tags: HashMap<String, Readonly<Tag>>,
+pub struct Metadata<TEdge, TProcessor, TTag> {
+    pub edges: HashMap<String, TEdge>,
+    pub tags: HashMap<String, TTag>,
     pub other: Map<String, Value>,
-    pub processor: Option<ProcessorOverride>,
+    pub processor: Option<TProcessor>,
 }
-impl Merge for Metadata {
+pub type CleanMetadata = Metadata<CleanEdgeOverride, CleanProcessorOverride, Readonly<RefTag>>;
+impl Merge for CleanMetadata {
     fn merge(&mut self, other: &Self) {
         self.edges.merge(&other.edges);
         self.tags.merge(&other.tags);
@@ -52,14 +54,14 @@ impl Merge for Metadata {
 }
 
 #[derive(Debug, Clone)]
-pub struct Install {
-    pub arguments: Vec<Arguments>,
+pub struct Install<TArguments, TEnvironment> {
+    pub arguments: Vec<TArguments>,
     pub program: String,
-    pub environments: Vec<Environment>,
+    pub environments: Vec<TEnvironment>,
     pub current_directory: Option<String>,
 }
-
-impl Merge for Install {
+pub type CleanInstall = Install<Arguments, Environment>;
+impl Merge for CleanInstall {
     fn merge(&mut self, other: &Self) {
         self.arguments.merge(&other.arguments);
         self.program = other.program.clone();
@@ -74,21 +76,21 @@ pub struct Definition {
     pub name: String,
     pub id: String,
     pub location: Option<String>,
-    pub metadata: HashMap<String, Readonly<Metadata>>,
-    pub edges: HashMap<String, Readonly<Edge>>,
-    pub tags: HashMap<String, Readonly<Tag>>,
-    pub processors: HashMap<String, Readonly<Processor>>,
+    pub metadata: HashMap<String, Readonly<CleanMetadata>>,
+    pub edges: HashMap<String, Readonly<CleanEdge>>,
+    pub tags: HashMap<String, Readonly<RefTag>>,
+    pub processors: HashMap<String, Readonly<CleanProcessor>>,
     pub arguments: HashMap<String, Readonly<Vec<String>>>,
     pub environments: HashMap<String, Readonly<HashMap<String, String>>>,
-    pub foreign_definitions: HashMap<String, Readonly<ForeignDefinition>>,
+    pub foreign_definitions: HashMap<String, Readonly<CleanForeignDefinition>>,
 }
 
 impl Definition {
-    fn find_edge(&self, reference: &String) -> Option<Readonly<Edge>> {
-        let mut segments = reference.split("/").collect::<Vec<&str>>();
+    fn find_edge(&self, reference: &String) -> Option<Readonly<CleanEdge>> {
+        let segments = reference.split("/").collect::<Vec<&str>>();
         self.find_edge_by_segment(segments)
     }
-    fn find_edge_by_segment(&self, mut segments: Vec<&str>) -> Option<Readonly<Edge>> {
+    fn find_edge_by_segment(&self, mut segments: Vec<&str>) -> Option<Readonly<CleanEdge>> {
         if let Some(segment) = segments.pop() {
             if let Some(edge) = self.edges.get(segment) {
                 return Some(edge.clone());
@@ -130,7 +132,7 @@ impl Definition {
                                     metadata_key.clone(),
                                     metadata_lock.other.clone(),
                                 ),
-                                processor_reference: edge_context.processor.reference.clone(),
+                                processor_reference: edge_context.processor.r#ref.clone(),
                                 write: WritePermissionsDto::edge(),
                                 edge: Some(ContextDto::new(
                                     edge_context.key.clone(),
@@ -144,10 +146,7 @@ impl Definition {
                             if processor == edge_context.processor {
                                 ProcessorContext {
                                     definition: DefinitionContextDto {
-                                        processor_reference: edge_context
-                                            .processor
-                                            .reference
-                                            .clone(),
+                                        processor_reference: edge_context.processor.r#ref.clone(),
                                         location: self.location.clone(),
                                         edge: Some(ContextDto::new(
                                             edge_context.key,
@@ -177,7 +176,7 @@ impl Definition {
                     if let Some(processor) = metadata_lock.processor.clone() {
                         processor_contexts.push(ProcessorContext {
                             definition: DefinitionContextDto {
-                                processor_reference: processor.reference.clone(),
+                                processor_reference: processor.r#ref.clone(),
                                 location: self.location.clone(),
                                 edge: None,
                                 metadata: ContextDto::new(

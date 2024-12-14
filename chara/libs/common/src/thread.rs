@@ -8,3 +8,26 @@ pub fn readonly<T>(value: T) -> Readonly<T> {
 }
 
 
+pub trait Read<T>{
+    fn read_ref_or_default(&self) -> T; 
+    fn read_or_default(self) -> T; 
+}
+
+
+impl <T: Default + Clone> Read<T> for Readonly<T>{
+    fn read_ref_or_default(&self) -> T {
+        if let Ok(lock) = self.read(){
+            lock.clone()
+        }else{
+            T::default()
+        }
+    }
+    
+    fn read_or_default(self) -> T {
+        if let Ok(lock) = self.read(){
+            lock.clone()
+        }else{
+            T::default()
+        }
+    }
+}

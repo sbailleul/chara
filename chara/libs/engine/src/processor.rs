@@ -1,9 +1,14 @@
 use std::sync::Arc;
 
-use serde_json::{Map, Value};
 use common::{merge::Merge, thread::Readonly};
+use serde_json::{Map, Value};
 
-use crate::{cli::{Arguments, Environment}, definition::definition::{Definition, Install}};
+use crate::{
+    cli::{Arguments, Environment},
+    definition::definition::{CleanInstall, Definition, Install},
+    draft::draft_definition::DraftDefinition,
+    reference_value::ReferencedValue,
+};
 
 #[derive(Debug)]
 pub struct Enrichment {
@@ -13,18 +18,19 @@ pub struct Enrichment {
 #[derive(Debug)]
 pub struct ProcessorResult {
     pub enrichment: Option<Enrichment>,
-    pub definition: Option<Definition>,
+    pub definition: Option<DraftDefinition>,
 }
 
 #[derive(Debug, Clone)]
-pub struct Processor {
-    pub arguments: Vec<Arguments>,
+pub struct Processor<TArguments, TInstall, TEnvironment> {
+    pub arguments: Vec<TArguments>,
     pub program: String,
-    pub install: Option<Install>,
-    pub environments: Vec<Environment>,
+    pub install: Option<TInstall>,
+    pub environments: Vec<TEnvironment>,
     pub current_directory: Option<String>,
 }
-impl Merge for Processor{
+pub type CleanProcessor = Processor<Arguments, CleanInstall, Environment>;
+impl Merge for CleanProcessor {
     fn merge(&mut self, other: &Self) {
         self.arguments.merge(&other.arguments);
         self.program = other.program.clone();
@@ -33,43 +39,54 @@ impl Merge for Processor{
 }
 
 #[derive(Debug, Clone)]
-pub struct ProcessorOverride {
-    pub arguments: Vec<Arguments>,
-    pub environments: Vec<Environment>,
-    pub processor: Readonly<Processor>,
-    pub reference: String,
+pub struct ProcessorOverride<TArguments, TEnvironment, TProcessor> {
+    pub arguments: Vec<TArguments>,
+    pub environments: Vec<TEnvironment>,
+    pub processor: TProcessor,
 }
-impl ProcessorOverride {
-    pub fn processor(processor: &Readonly<Processor>, reference: &String) -> Self {
+type ProcessorOverrideWithRef<TArguments, TEnvironment, TProcessor> =
+    ReferencedValue<ProcessorOverride<TArguments, TEnvironment, TProcessor>>;
+
+pub type CleanProcessorOverride =
+    ProcessorOverrideWithRef<Arguments, Environment, Readonly<CleanProcessor>>;
+
+impl<TArguments: Clone, TEnvironment: Clone, TProcessor: Clone>
+    ProcessorOverrideWithRef<TArguments, TEnvironment, TProcessor>
+{
+    pub fn processor(processor: &TProcessor, reference: &String) -> Self {
         Self {
-            arguments: vec![],
-            environments: vec![],
-            reference: reference.clone(),
-            processor: processor.clone(),
+            r#ref: reference.clone(),
+            value: ProcessorOverride {
+                arguments: vec![],
+                environments: vec![],
+                processor: processor.clone(),
+            },
         }
     }
-
-    pub fn from_with(&self, arguments: Vec<Arguments>, environments: Vec<Environment>) -> Self {
+    pub fn from_with(&self, arguments: Vec<TArguments>, environments: Vec<TEnvironment>) -> Self {
         let mut processor = self.clone();
-        processor.arguments = [arguments, processor.arguments].concat();
-        processor.environments = [environments, processor.environments].concat();
+        processor.value.arguments = [arguments, processor.value.arguments].concat();
+        processor.value.environments = [environments, processor.value.environments].concat();
         processor
     }
-    
 }
-impl Merge for ProcessorOverride{
+impl Merge for CleanProcessorOverride {
     fn merge(&mut self, other: &Self) {
-        self.arguments.append(&mut other.arguments.clone());
-        self.environments.append(&mut other.environments.clone());
-        self.reference = other.reference.clone();
+        self.value
+            .arguments
+            .append(&mut other.value.arguments.clone());
+        self.value
+            .environments
+            .append(&mut other.value.environments.clone());
+        self.r#ref = other.r#ref.clone();
         // self.processor.read().unwrap().
     }
 }
-impl PartialEq for ProcessorOverride {
+impl PartialEq for CleanProcessorOverride {
     fn eq(&self, other: &Self) -> bool {
-        self.arguments == other.arguments
-            && self.environments == other.environments
-            && Arc::ptr_eq(&self.processor, &other.processor)
+        self.value.arguments == other.value.arguments
+            && self.value.environments == other.value.environments
+            && Arc::ptr_eq(&self.value.processor, &other.value.processor)
     }
 }
-impl Eq for ProcessorOverride {}
+impl Eq for CleanProcessorOverride {}

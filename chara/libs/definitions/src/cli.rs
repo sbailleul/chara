@@ -1,10 +1,13 @@
 use std::{collections::HashMap, fs::canonicalize, process::Command};
 
+use common::ThreadError;
 use engine::{
-    cli::{Arguments, Environment}, definition::definition::Install, errors::CharaError, processor::{Processor, ProcessorOverride}
+    cli::{Arguments, Environment},
+    definition::definition::{CleanInstall, Install},
+    errors::CharaError,
+    processor::{CleanProcessor, CleanProcessorOverride},
 };
 use log::info;
-use common::ThreadError;
 pub trait Inputs {
     fn arguments(&self) -> Vec<Arguments>;
     fn environments(&self) -> Vec<Environment>;
@@ -27,17 +30,13 @@ pub trait Inputs {
 pub trait Cli: Inputs {
     fn program(&self) -> Result<String, CharaError>;
     fn current_directory(&self) -> Result<Option<String>, CharaError>;
-    fn command(
-        &self,
-        additional_arguments: Option<Vec<String>>,
-    ) -> Result<Command, CharaError> {
+    fn command(&self, additional_arguments: Option<Vec<String>>) -> Result<Command, CharaError> {
         self.program().and_then(|program| {
             let mut cmd = Command::new(&program);
             info!("Run program {program}");
             if let Some(current_directory) = self.current_directory()?.as_ref() {
                 info!("Current directory {current_directory}");
-                let current_directory =
-                    canonicalize(current_directory).map_err(CharaError::IO)?;
+                let current_directory = canonicalize(current_directory).map_err(CharaError::IO)?;
                 cmd.current_dir(current_directory);
             } else {
                 info!("No current directory")
@@ -66,30 +65,28 @@ pub trait Cli: Inputs {
     ) -> Result<String, CharaError> {
         self.command(additional_arguments).and_then(|mut cmd| {
             info!("Run command");
-            cmd.output()
-                .map_err(CharaError::IO)
-                .and_then(|output| {
-                    if output.status.success() {
-                        String::from_utf8(output.stdout)
-                            .map_err(CharaError::ParseUtf8)
-                            .inspect(|stdout| {
-                                info!("Stdout {stdout}");
-                            })
-                    } else {
-                        String::from_utf8(output.stderr)
-                            .map_err(CharaError::ParseUtf8)
-                            .and_then(|stderr| {
-                                Err(CharaError::Process(format!(
-                                    "Processor execution failed [Error : {stderr}]"
-                                )))
-                            })
-                    }
-                })
+            cmd.output().map_err(CharaError::IO).and_then(|output| {
+                if output.status.success() {
+                    String::from_utf8(output.stdout)
+                        .map_err(CharaError::ParseUtf8)
+                        .inspect(|stdout| {
+                            info!("Stdout {stdout}");
+                        })
+                } else {
+                    String::from_utf8(output.stderr)
+                        .map_err(CharaError::ParseUtf8)
+                        .and_then(|stderr| {
+                            Err(CharaError::Process(format!(
+                                "Processor execution failed [Error : {stderr}]"
+                            )))
+                        })
+                }
+            })
         })
     }
 }
 
-impl Inputs for Install {
+impl Inputs for CleanInstall {
     fn arguments(&self) -> Vec<Arguments> {
         self.arguments.clone()
     }
@@ -97,7 +94,7 @@ impl Inputs for Install {
         self.environments.clone()
     }
 }
-impl Cli for Install {
+impl Cli for CleanInstall {
     fn program(&self) -> Result<String, CharaError> {
         Ok(self.program.clone())
     }
@@ -106,7 +103,7 @@ impl Cli for Install {
     }
 }
 
-impl Inputs for Processor {
+impl Inputs for CleanProcessor {
     fn arguments(&self) -> Vec<Arguments> {
         self.arguments.clone()
     }
@@ -114,7 +111,7 @@ impl Inputs for Processor {
         self.environments.clone()
     }
 }
-impl Cli for Processor {
+impl Cli for CleanProcessor {
     fn program(&self) -> Result<String, CharaError> {
         Ok(self.program.clone())
     }
@@ -124,22 +121,25 @@ impl Cli for Processor {
     }
 }
 
-impl Inputs for ProcessorOverride {
+impl Inputs for CleanProcessorOverride {
     fn arguments(&self) -> Vec<Arguments> {
-        self.processor
+        self.value
+            .processor
             .read()
             .map_or(vec![], |processor| processor.arguments())
             .into_iter()
-            .chain(self.arguments.clone().into_iter())
+            .chain(self.value.arguments.clone().into_iter())
             .collect()
     }
 
     fn environments(&self) -> Vec<Environment> {
-        self.environments
+        self.value
+            .environments
             .clone()
             .into_iter()
             .chain(
-                self.processor
+                self.value
+                    .processor
                     .read()
                     .map_or(vec![], |processor| processor.environments())
                     .into_iter(),
@@ -147,16 +147,18 @@ impl Inputs for ProcessorOverride {
             .collect()
     }
 }
-impl Cli for ProcessorOverride {
+impl Cli for CleanProcessorOverride {
     fn program(&self) -> Result<String, CharaError> {
-        self.processor
+        self.value
+            .processor
             .read()
             .or(Err(CharaError::Thread(ThreadError::Poison)))
             .and_then(|processor| processor.program())
     }
 
     fn current_directory(&self) -> Result<Option<String>, CharaError> {
-        self.processor
+        self.value
+            .processor
             .read()
             .map(|processor| processor.current_directory.clone())
             .or(Err(CharaError::Thread(ThreadError::Poison)))

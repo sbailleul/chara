@@ -1,20 +1,22 @@
 use common::merge::Merge;
 
-use super::{definition::Definition, input::DefinitionInput};
+use crate::draft::draft_definition::DraftDefinition;
+
+use super::input::{CleanDefinitionInput, DefinitionInput};
 
 #[derive(Debug, Clone)]
-pub struct ForeignDefinition {
-    pub input: Option<DefinitionInput>,
-    pub output: Option<Definition>,
+pub struct ForeignDefinition<TInput> {
+    pub input: Option<TInput>,
+    pub output: Option<DraftDefinition>,
 }
-impl ForeignDefinition {
-    pub fn input(input: DefinitionInput) -> Self {
+impl <TInput> ForeignDefinition<TInput> {
+    pub fn input(input: TInput ) -> Self {
         ForeignDefinition {
             input: Some(input),
             output: None,
         }
     }
-    pub fn output(output: Definition) -> Self {
+    pub fn output(output: DraftDefinition) -> Self {
         ForeignDefinition {
             input: None,
             output: Some(output),
@@ -22,10 +24,11 @@ impl ForeignDefinition {
     }
 }
 
-
-impl Merge for ForeignDefinition{
+pub type CleanForeignDefinition = ForeignDefinition<CleanDefinitionInput>;
+impl Merge for CleanForeignDefinition {
     fn merge(&mut self, other: &Self) {
         self.input.merge(&other.input);
-        self.output.merge(&other.output);
+        // TODO
+        // self.output.merge(&other.output);
     }
 }

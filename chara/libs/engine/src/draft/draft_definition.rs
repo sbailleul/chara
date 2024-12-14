@@ -1,67 +1,55 @@
 use std::collections::HashMap;
 
-use common::thread::Readonly;
+use common::{merge::Merge, thread::Readonly};
 use serde_json::{Map, Value};
 
 use crate::{
-    cli::Environment, definition::{definition::Definition, foreign_definition::ForeignDefinition, input::DefinitionInput}, reference_value::RefValue
+    cli::{Arguments, Environment},
+    definition::{
+        definition::{Definition, Install, Metadata, RefTag, Tag},
+        edge::{Edge, EdgeOverride},
+        foreign_definition::ForeignDefinition,
+        input::DefinitionInput,
+    },
+    processor::{Processor, ProcessorOverride},
+    reference_value::LazyRefValue,
 };
-type Arguments = RefValue<Vec<String>>;
-type Environments = RefValue<HashMap<String, String>>;
-#[derive(Debug, Clone)]
-pub struct DraftForeignDefinition {
-    pub input: Option<DefinitionInput>,
-    pub output: Option<DraftDefinition>,
+pub type DraftArguments = LazyRefValue<Vec<String>>;
+pub type DraftEnvironments = LazyRefValue<HashMap<String, String>>;
+pub type DraftDefinitionInput = DefinitionInput<DraftProcessorOverride>;
+pub type DraftForeignDefinition = ForeignDefinition<DraftDefinitionInput>;
+pub type DraftInstall = Install<DraftArguments, DraftEnvironments>;
+
+pub type DraftProcessor = Processor<DraftArguments, DraftInstall, DraftEnvironments>;
+pub type DraftProcessorOverride =
+    ProcessorOverride<DraftArguments, DraftEnvironments, LazyRefValue<DraftProcessor>>;
+
+impl DraftProcessorOverride {
+    pub fn processor(processor: LazyRefValue<DraftProcessor>) -> Self {
+        Self {
+            arguments: vec![],
+            environments: vec![],
+            processor,
+        }
+    }
 }
-#[derive(Debug, Clone)]
-pub struct DraftInstall {
-    pub arguments: Vec<Arguments>,
-    pub program: String,
-    pub environments: Vec<Environment>,
-    pub current_directory: Option<String>,
+
+pub type DraftEdge = Edge<DraftProcessorOverride, DraftForeignDefinition>;
+
+pub type DraftEdgeOverride = EdgeOverride<DraftArguments, DraftEnvironments, LazyRefValue<DraftEdge>>;
+impl DraftEdgeOverride {
+    pub fn edge(edge: LazyRefValue<DraftEdge>) -> Self {
+        Self {
+            arguments: vec![],
+            definition: None,
+            edge,
+            environments: vec![],
+            other: Map::new(),
+        }
+    }
 }
-#[derive(Debug, Clone)]
-pub struct DraftProcessor {
-    pub arguments: Vec<Arguments>,
-    pub program: String,
-    pub install: Option<DraftInstall>,
-    pub environments: Vec<Environments>,
-    pub current_directory: Option<String>,
-}
-#[derive(Debug, Clone)]
-pub struct ProcessorOverride {
-    pub arguments: Vec<Arguments>,
-    pub environments: Vec<Environments>,
-    pub processor: RefValue<DraftProcessor>,
-    pub reference: String,
-}
-#[derive(Debug, Clone)]
-pub struct Edge {
-    pub definition: Option<Readonly<ForeignDefinition>>,
-    pub processor: Option<ProcessorOverride>,
-    pub other: Map<String, Value>,
-}
-#[derive(Debug, Clone)]
-pub struct EdgeOverride {
-    pub arguments: Vec<Arguments>,
-    pub environments: Vec<Environments>,
-    pub edge: RefValue<Edge>,
-    pub other: Map<String, Value>,
-    pub definition: Option<Definition>,
-}
-#[derive(Debug, Clone)]
-pub struct Tag{
-    pub label: Option<String>,
-    pub tags: HashMap<String, Readonly<Tag>>,
-    pub other: Value,
-}
-#[derive(Debug, Clone)]
-pub struct DraftMetadata {
-    pub edges: HashMap<String, EdgeOverride>,
-    pub tags: HashMap<String, RefValue<Tag>>,
-    pub other: Map<String, Value>,
-    pub processor: Option<ProcessorOverride>,
-}
+
+pub type DraftMetadata = Metadata<DraftEdgeOverride, DraftProcessorOverride, LazyRefValue<RefTag>>;
 
 #[derive(Debug, Clone)]
 pub struct DraftDefinition {
@@ -69,10 +57,10 @@ pub struct DraftDefinition {
     pub id: String,
     pub location: Option<String>,
     pub metadata: HashMap<String, Readonly<DraftMetadata>>,
-    pub edges: HashMap<String, Readonly<Edge>>,
-    pub tags: HashMap<String, Readonly<Tag>>,
+    pub edges: HashMap<String, Readonly<DraftEdge>>,
+    pub tags: HashMap<String, Readonly<RefTag>>,
     pub processors: HashMap<String, Readonly<DraftProcessor>>,
     pub arguments: HashMap<String, Readonly<Vec<String>>>,
     pub environments: HashMap<String, Readonly<HashMap<String, String>>>,
-    pub foreign_definitions: HashMap<String, Readonly<ForeignDefinition>>,
+    pub foreign_definitions: HashMap<String, Readonly<DraftForeignDefinition>>,
 }

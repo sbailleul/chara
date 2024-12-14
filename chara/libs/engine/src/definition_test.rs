@@ -12,7 +12,7 @@ mod definition {
             definition::{Definition, Metadata},
             edge::{Edge, EdgeOverride},
         },
-        processor::{Processor, ProcessorOverride},
+        processor::{Processor},
     };
 
     #[test]
@@ -26,7 +26,7 @@ mod definition {
         });
         let test_edge = readonly(Edge {
             definition: None,
-            processor: Some(ProcessorOverride::processor(
+            processor: Some(ProcessorOverrideWithRef::processor(
                 &reused_processor,
                 &"reference".to_string(),
             )),
@@ -34,7 +34,7 @@ mod definition {
         });
         let test_metadata = readonly(Metadata {
             edges: hash_map! {"test_edge".to_string() =>EdgeOverride{edge: test_edge.clone(), arguments: vec![], environments: vec![], definition: None, other: Map::<String, Value>::new()} },
-            processor: Some(ProcessorOverride::processor(
+            processor: Some(ProcessorOverrideWithRef::processor(
                 &reused_processor,
                 &"reference".to_string(),
             )),
@@ -71,7 +71,7 @@ mod definition {
         };
         assert_eq!(contexts[0].definition, expected_definition);
         assert!(Arc::ptr_eq(
-            &contexts[0].processor.processor,
+            &contexts[0].processor.value.processor,
             &reused_processor
         ));
     }

@@ -152,7 +152,7 @@ pub struct ProcessorDto {
 }
 #[derive(Debug, Deserialize, Serialize, Hash, Clone)]
 pub struct ProcessorOverrideDto {
-    pub reference: String,
+    pub reference: Option<String>,
     #[serde(default)]
     pub arguments: Vec<String>,
     #[serde(default)]

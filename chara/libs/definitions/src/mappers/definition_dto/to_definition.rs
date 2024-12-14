@@ -1,12 +1,15 @@
-use std::{collections::HashMap, path, sync::Arc};
+use std::{collections::HashMap, hash::Hash, path, sync::Arc};
 
 use engine::{
-    definition::{definition::{
-        Definition, Install, Metadata, Tag,
-    }, edge::{Edge, EdgeOverride}, foreign_definition::ForeignDefinition, input::DefinitionInput},
-    processor::{Processor, ProcessorOverride},
+    definition::{
+        definition::{Definition, Install, Metadata, RefTag, Tag},
+        edge::{Edge, EdgeOverride},
+        foreign_definition::ForeignDefinition,
+        input::DefinitionInput,
+    },
+    processor::{CleanProcessorOverride, Processor},
 };
-use serde_json::Value;
+use serde_json::{de::Read, Value};
 
 use common::thread::{readonly, Readonly};
 use uuid::Uuid;
@@ -23,25 +26,10 @@ use crate::{
 };
 
 impl DefinitionDto {
-    fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {
-        self.arguments
-            .iter()
-            .map(|(key, value)| (key.clone(), readonly(value.clone())))
-            .collect()
+    pub fn map(self) -> Definition{
+        self.map_with_location(None)
     }
-    fn environments(&self) -> HashMap<String, Readonly<HashMap<String, String>>> {
-        self.environments
-            .iter()
-            .map(|(key, value)| (key.clone(), readonly(value.clone())))
-            .collect()
-    }
-    pub fn map_overwrite_location(self, location: String) -> Definition {
-        let location = Some(location);
-        let mut definition = self.map(location.clone());
-        definition.location = location;
-        definition
-    }
-    pub fn map(self, location: Option<String>) -> Definition {
+    pub fn map_with_location(self, location: Option<String>) -> Definition {
         let mut definition = Definition {
             parent: None,
             id: self.id.clone().unwrap_or(Uuid::new_v4().to_string()),
@@ -57,34 +45,56 @@ impl DefinitionDto {
         };
         self.set_processors(&mut definition);
         self.set_edges(&mut definition);
-        self.set_tags(&mut definition);
+        definition.tags = self.list_tags();
         self.set_metadata(&mut definition);
         definition
     }
+    pub fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {
+        self.arguments
+            .iter()
+            .map(|(key, value)| (key.clone(), readonly(value.clone())))
+            .collect()
+    }
+    pub fn environments(&self) -> HashMap<String, Readonly<HashMap<String, String>>> {
+        self.environments
+            .iter()
+            .map(|(key, value)| (key.clone(), readonly(value.clone())))
+            .collect()
+    }
+    pub fn map_overwrite_location(self, location: String) -> Definition {
+        let location = Some(location);
+        let mut definition = self.map_with_location(location.clone());
+        definition.location = location;
+        definition
+    }
 
-    fn set_tags(&self, definition: &mut Definition) {
+    pub fn list_tags(&self) -> HashMap<String, Readonly<RefTag>> {
         let root_path = "#".to_string();
-        let root_tag = readonly(Tag {
-            reference: root_path.clone(),
-            label: None,
-            tags: HashMap::new(),
-            other: Value::Null,
+        let root_tag = readonly(RefTag {
+            r#ref: root_path.clone(),
+            value: Tag{
+                label: None,
+                tags: HashMap::new(),
+                other: Value::Null,
+            }
+
         });
         let tags = to_tags(&root_tag, &root_path, &self.tags);
 
-        definition.tags = tags
+        let mut all_tags = tags
             .iter()
             .map(|(_key, path, _parent_tag, tag)| (path.clone(), tag.clone()))
-            .collect::<HashMap<String, Readonly<Tag>>>();
-        definition.tags.insert(root_path, root_tag.clone());
-        let tags: HashMap<String, Arc<std::sync::RwLock<Tag>>> = tags
+            .collect::<HashMap<String, Readonly<RefTag>>>();
+        all_tags.insert(root_path, root_tag.clone());
+        let tags: HashMap<String, Arc<std::sync::RwLock<RefTag>>> = tags
             .into_iter()
             .filter(|(_key, _path, parent_tag, _tag)| Arc::ptr_eq(parent_tag, &root_tag))
             .map(|(_key, path, _parent_tag, tag)| (path.clone(), tag.clone()))
-            .collect::<HashMap<String, Readonly<Tag>>>();
+            .collect::<HashMap<String, Readonly<RefTag>>>();
         if let Ok(mut root_tag) = root_tag.write() {
-            root_tag.tags = tags;
+            root_tag.value.tags = tags;
         };
+        all_tags
     }
 
     fn set_processors(&self, definition: &mut Definition) {
@@ -135,7 +145,7 @@ impl DefinitionDto {
                                 foreign_definition
                             {
                                 let foreign_definition = readonly(ForeignDefinition::output(
-                                    ready_definition.clone().map(None),
+                                    ready_definition.clone().map_draft_with_location(None),
                                 ));
                                 definition
                                     .foreign_definitions
@@ -154,7 +164,7 @@ impl DefinitionDto {
                                             text_definition.trim_start_matches(REFERENCE_PREFIX),
                                         ) {
                                             Some(DefinitionInput::Processor(
-                                                ProcessorOverride::processor(
+                                                CleanProcessorOverride::processor(
                                                     processor,
                                                     text_definition,
                                                 ),
@@ -228,7 +238,7 @@ impl DefinitionDto {
                                                 ),
                                                 definition: metadata_edge
                                                     .definition()
-                                                    .map(|def| def.map(None)),
+                                                    .map(|def| def.map_with_location(None)),
                                                 other: metadata_edge.other(),
                                             },
                                         )

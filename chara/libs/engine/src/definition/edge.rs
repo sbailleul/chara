@@ -1,18 +1,27 @@
 use common::{merge::Merge, thread::Readonly};
 use serde_json::{Map, Value};
 
-use crate::{cli::{Arguments, Environment}, processor::ProcessorOverride};
+use crate::{
+    cli::{Arguments, Environment},
+    processor::CleanProcessorOverride,
+};
 
-use super::{definition::Definition, foreign_definition::ForeignDefinition};
+use super::{
+    definition::Definition,
+    foreign_definition::{CleanForeignDefinition, ForeignDefinition},
+    input::CleanDefinitionInput,
+};
 
 #[derive(Debug, Clone)]
-pub struct Edge {
-    pub definition: Option<Readonly<ForeignDefinition>>,
-    pub processor: Option<ProcessorOverride>,
+pub struct Edge<TProcessorOverride, TForeignDefinition> {
+    pub definition: Option<Readonly<TForeignDefinition>>,
+    pub processor: Option<TProcessorOverride>,
     pub other: Map<String, Value>,
 }
 
-impl Merge for Edge {
+pub type CleanEdge = Edge<CleanProcessorOverride, CleanForeignDefinition>;
+
+impl Merge for CleanEdge {
     fn merge(&mut self, other: &Self) {
         self.definition.merge(&other.definition);
         self.processor.merge(&other.processor);
@@ -20,17 +29,17 @@ impl Merge for Edge {
     }
 }
 
-
 #[derive(Debug, Clone)]
-pub struct EdgeOverride {
-    pub arguments: Vec<Arguments>,
-    pub environments: Vec<Environment>,
-    pub edge: Readonly<Edge>,
+pub struct EdgeOverride<TArguments, TEnvironment, TEdge> {
+    pub arguments: Vec<TArguments>,
+    pub environments: Vec<TEnvironment>,
+    pub edge: TEdge,
     pub other: Map<String, Value>,
     pub definition: Option<Definition>,
 }
+pub type CleanEdgeOverride = EdgeOverride<Arguments, Environment, Readonly<CleanEdge>>;
 
-impl Merge for EdgeOverride {
+impl Merge for CleanEdgeOverride {
     fn merge(&mut self, other: &Self) {
         self.arguments.merge(&other.arguments);
         self.environments.merge(&other.environments);

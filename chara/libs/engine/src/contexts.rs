@@ -2,19 +2,19 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use common::thread::Readonly;
 
-use crate::{definition::definition::Metadata, processor::ProcessorOverride};
+use crate::{definition::definition::{CleanMetadata, Metadata}, processor::{CleanProcessorOverride}};
 
 #[derive(Debug)]
 pub struct ProcessorContext {
     pub definition: DefinitionContextDto,
-    pub processor: ProcessorOverride,
-    pub metadata: Readonly<Metadata>,
+    pub processor: CleanProcessorOverride,
+    pub metadata: Readonly<CleanMetadata>,
 }
 #[derive(Debug)]
 pub(crate) struct EdgeContext {
     pub key: String,
     pub value: Map<String, Value>,
-    pub processor: ProcessorOverride,
+    pub processor: CleanProcessorOverride,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
