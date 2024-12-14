@@ -2,10 +2,10 @@
 use common::merge::{Merge, Overwrite};
 
 
-use super::definition::Definition;
+use super::definition::CleanDefinition;
 
-impl Merge for Definition {
-    fn merge(&mut self, other: &Definition) {
+impl Merge for CleanDefinition {
+    fn merge(&mut self, other: &CleanDefinition) {
         self.id = other.id.clone();
         self.arguments.merge(&other.arguments);
         self.environments.merge(&other.environments);

@@ -1,5 +1,5 @@
 use engine::{
-    definition::definition::Definition,
+    definition::definition::CleanDefinition,
     draft::draft_definition::{DraftDefinition, DraftProcessorOverride},
     processor::{CleanProcessorOverride, ProcessorOverride},
     reference_value::{LazyRef, LazyRefOrValue, ReferencedValue},
@@ -15,7 +15,7 @@ use super::{
 
 pub fn to_node_processor(
     node_processor: &ReferenceOrObjectDto<ProcessorOverrideDto>,
-    definition: &Definition,
+    definition: &CleanDefinition,
 ) -> Option<CleanProcessorOverride> {
     match node_processor {
         ReferenceOrObjectDto::Reference(reference) => definition
@@ -30,7 +30,7 @@ pub fn to_node_processor(
 
 pub fn to_processor_override(
     processor_override: &ProcessorOverrideDto,
-    definition: &Definition,
+    definition: &CleanDefinition,
 ) -> Option<CleanProcessorOverride> {
     if let Some(reference) = processor_override.reference.as_ref() {
         definition

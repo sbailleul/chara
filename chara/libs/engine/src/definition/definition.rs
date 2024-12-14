@@ -25,16 +25,16 @@ pub struct Tag {
     pub tags: HashMap<String, Readonly<RefTag>>,
     pub other: Value,
 }
-pub type RefTag = ReferencedValue<Tag>;
-
-impl Merge for RefTag {
+impl Merge for Tag{
     fn merge(&mut self, other: &Self) {
-        self.value.label.overwrite(&other.value.label);
-        self.value.other.merge(&other.value.other);
-        self.r#ref = other.r#ref.clone();
-        self.value.tags.merge(&other.value.tags);
+        self.label.overwrite(&other.label);
+        self.other.merge(&other.other);
+        self.tags.merge(&other.tags);
     }
 }
+pub type RefTag = ReferencedValue<Tag>;
+
+
 
 #[derive(Debug, Clone)]
 pub struct Metadata<TEdge, TProcessor, TTag> {
@@ -44,7 +44,7 @@ pub struct Metadata<TEdge, TProcessor, TTag> {
     pub processor: Option<TProcessor>,
 }
 pub type CleanMetadata = Metadata<CleanEdgeOverride, CleanProcessorOverride, Readonly<RefTag>>;
-impl Merge for CleanMetadata {
+impl <TEdge: Merge + Clone, TProcessor: Merge+Clone, TTag: Merge + Clone> Merge for  Metadata<TEdge, TProcessor, TTag> {
     fn merge(&mut self, other: &Self) {
         self.edges.merge(&other.edges);
         self.tags.merge(&other.tags);
@@ -61,7 +61,7 @@ pub struct Install<TArguments, TEnvironment> {
     pub current_directory: Option<String>,
 }
 pub type CleanInstall = Install<Arguments, Environment>;
-impl Merge for CleanInstall {
+impl <TArguments: Merge + Clone, TEnvironment: Merge + Clone> Merge for Install<TArguments, TEnvironment> {
     fn merge(&mut self, other: &Self) {
         self.arguments.merge(&other.arguments);
         self.program = other.program.clone();
@@ -71,8 +71,8 @@ impl Merge for CleanInstall {
 }
 
 #[derive(Debug, Clone)]
-pub struct Definition {
-    pub parent: Option<Readonly<Definition>>,
+pub struct CleanDefinition {
+    pub parent: Option<Readonly<CleanDefinition>>,
     pub name: String,
     pub id: String,
     pub location: Option<String>,
@@ -85,7 +85,7 @@ pub struct Definition {
     pub foreign_definitions: HashMap<String, Readonly<CleanForeignDefinition>>,
 }
 
-impl Definition {
+impl CleanDefinition {
     fn find_edge(&self, reference: &String) -> Option<Readonly<CleanEdge>> {
         let segments = reference.split("/").collect::<Vec<&str>>();
         self.find_edge_by_segment(segments)

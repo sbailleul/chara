@@ -2,7 +2,7 @@ use std::{collections::HashMap, hash::Hash, path, sync::Arc};
 
 use engine::{
     definition::{
-        definition::{Definition, Install, Metadata, RefTag, Tag},
+        definition::{CleanDefinition, Install, Metadata, RefTag, Tag},
         edge::{Edge, EdgeOverride},
         foreign_definition::ForeignDefinition,
         input::DefinitionInput,
@@ -26,11 +26,11 @@ use crate::{
 };
 
 impl DefinitionDto {
-    pub fn map(self) -> Definition{
+    pub fn map(self) -> CleanDefinition{
         self.map_with_location(None)
     }
-    pub fn map_with_location(self, location: Option<String>) -> Definition {
-        let mut definition = Definition {
+    pub fn map_with_location(self, location: Option<String>) -> CleanDefinition {
+        let mut definition = CleanDefinition {
             parent: None,
             id: self.id.clone().unwrap_or(Uuid::new_v4().to_string()),
             location: self.location.clone().or(location),
@@ -61,7 +61,7 @@ impl DefinitionDto {
             .map(|(key, value)| (key.clone(), readonly(value.clone())))
             .collect()
     }
-    pub fn map_overwrite_location(self, location: String) -> Definition {
+    pub fn map_overwrite_location(self, location: String) -> CleanDefinition {
         let location = Some(location);
         let mut definition = self.map_with_location(location.clone());
         definition.location = location;
@@ -97,7 +97,7 @@ impl DefinitionDto {
         all_tags
     }
 
-    fn set_processors(&self, definition: &mut Definition) {
+    fn set_processors(&self, definition: &mut CleanDefinition) {
         definition.processors = self
             .processors
             .iter()
@@ -127,7 +127,7 @@ impl DefinitionDto {
             .collect()
     }
 
-    fn set_edges(&self, definition: &mut Definition) {
+    fn set_edges(&self, definition: &mut CleanDefinition) {
         definition.edges = self
             .edges
             .iter()
@@ -205,7 +205,7 @@ impl DefinitionDto {
             })
             .collect()
     }
-    fn set_metadata(&self, definition: &mut Definition) {
+    fn set_metadata(&self, definition: &mut CleanDefinition) {
         definition.metadata = self
             .metadata
             .iter()

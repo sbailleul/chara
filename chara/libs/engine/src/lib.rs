@@ -10,7 +10,7 @@ use common::{
 };
 use contexts::ProcessorContext;
 use definition::{
-    definition::Definition, foreign_definition::{CleanForeignDefinition, ForeignDefinition}, input::{CleanDefinitionInput, DefinitionInput},
+    definition::CleanDefinition, foreign_definition::{CleanForeignDefinition, ForeignDefinition}, input::{CleanDefinitionInput, DefinitionInput},
 };
 use draft::draft_definition::{DraftDefinition, DraftForeignDefinition};
 use errors::CharaError;
@@ -27,22 +27,22 @@ pub mod reference_value;
 pub trait Definitions: Send + Sync {
     fn get(&self, definition: &CleanDefinitionInput) -> Result<DraftDefinition, CharaError>;
     fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, CharaError>;
-    fn save(&self, definition: &Definition) -> Result<(), CharaError>;
+    fn save(&self, definition: &CleanDefinition) -> Result<(), CharaError>;
 }
 
 pub fn run(
-    definition: Definition,
+    definition: CleanDefinition,
     definitions: Arc<dyn Definitions>,
-) -> Result<Definition, CharaError> {
+) -> Result<CleanDefinition, CharaError> {
     let definition = process_definition(readonly(definition.clone()), &definitions)?;
     definitions.save(&definition)?;
     Ok(definition)
 }
 
 fn process_definition(
-    definition: Readonly<Definition>,
+    definition: Readonly<CleanDefinition>,
     definitions: &Arc<dyn Definitions>,
-) -> Result<Definition, CharaError> {
+) -> Result<CleanDefinition, CharaError> {
     let definition_value = definition
         .read()
         .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
@@ -64,7 +64,7 @@ fn process_definition(
 }
 
 fn handle_results(
-    source_definition: Readonly<Definition>,
+    source_definition: Readonly<CleanDefinition>,
     results: Vec<(ProcessorContext, ProcessorResult)>,
     definitions: &Arc<dyn Definitions>,
 ) -> Result<(), CharaError> {
@@ -92,29 +92,29 @@ fn handle_results(
         if let (Some(mut result_definition), Some(edge_context)) =
             (result.definition, context.definition.edge)
         {
-            // if let Some(edge) = metadata.edges.get_mut(&edge_context.name) {
-            //     if let Ok(src_edge) = edge.edge.read() {
-            //         if let Some(foreign_definition) = src_edge.definition.as_ref() {
-            //             if let Ok(foreign_definition) = foreign_definition.read() {
-            //                 if let Some(foreign_definition) = foreign_definition.output.as_ref() {
-            //                     result_definition.merge(foreign_definition);
-            //                 }
-            //             }
-            //         }
-            //     }
-            //     edge.definition.merge(&Some(result_definition));
-            //     if let Some(definition) = edge.definition.as_mut() {
-            //         definition.parent = Some(source_definition.clone());
-            //         *definition = process_definition(readonly(definition.clone()), definitions)?;
-            //     }
-            // }
+            if let Some(edge) = metadata.edges.get_mut(&edge_context.name) {
+                // if let Ok(src_edge) = edge.edge.read() {
+                //     if let Some(foreign_definition) = src_edge.definition.as_ref() {
+                //         if let Ok(foreign_definition) = foreign_definition.read() {
+                //             if let Some(foreign_definition) = foreign_definition.output.as_ref() {
+                //                 result_definition.merge(foreign_definition);
+                //             }
+                //         }
+                //     }
+                // }
+                // edge.definition.merge(&Some(result_definition));
+                if let Some(definition) = edge.definition.as_mut() {
+                    definition.parent = Some(source_definition.clone());
+                    *definition = process_definition(readonly(definition.clone()), definitions)?;
+                }
+            }
         }
     }
     Ok(())
 }
 
 fn get_definitions(
-    definition: &Definition,
+    definition: &CleanDefinition,
     definitions: &Arc<dyn Definitions>,
 ) -> Vec<(Readonly<CleanForeignDefinition>, Option<DraftDefinition>)> {
     definition

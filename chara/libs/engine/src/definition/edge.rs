@@ -7,7 +7,7 @@ use crate::{
 };
 
 use super::{
-    definition::Definition,
+    definition::CleanDefinition,
     foreign_definition::{CleanForeignDefinition, ForeignDefinition},
     input::CleanDefinitionInput,
 };
@@ -18,10 +18,9 @@ pub struct Edge<TProcessorOverride, TForeignDefinition> {
     pub processor: Option<TProcessorOverride>,
     pub other: Map<String, Value>,
 }
-
 pub type CleanEdge = Edge<CleanProcessorOverride, CleanForeignDefinition>;
 
-impl Merge for CleanEdge {
+impl<TProcessorOverride:  Merge + Clone, TForeignDefinition:  Merge + Clone> Merge for Edge<TProcessorOverride, TForeignDefinition> {
     fn merge(&mut self, other: &Self) {
         self.definition.merge(&other.definition);
         self.processor.merge(&other.processor);
@@ -35,11 +34,11 @@ pub struct EdgeOverride<TArguments, TEnvironment, TEdge> {
     pub environments: Vec<TEnvironment>,
     pub edge: TEdge,
     pub other: Map<String, Value>,
-    pub definition: Option<Definition>,
+    pub definition: Option<CleanDefinition>,
 }
 pub type CleanEdgeOverride = EdgeOverride<Arguments, Environment, Readonly<CleanEdge>>;
 
-impl Merge for CleanEdgeOverride {
+impl<TArguments: Merge + Clone, TEnvironment: Merge + Clone, TEdge: Merge> Merge for EdgeOverride<TArguments, TEnvironment, TEdge> {
     fn merge(&mut self, other: &Self) {
         self.arguments.merge(&other.arguments);
         self.environments.merge(&other.environments);

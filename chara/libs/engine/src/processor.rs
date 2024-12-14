@@ -5,7 +5,7 @@ use serde_json::{Map, Value};
 
 use crate::{
     cli::{Arguments, Environment},
-    definition::definition::{CleanInstall, Definition, Install},
+    definition::definition::{CleanInstall, CleanDefinition, Install},
     draft::draft_definition::DraftDefinition,
     reference_value::ReferencedValue,
 };

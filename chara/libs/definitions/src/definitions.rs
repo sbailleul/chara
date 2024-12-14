@@ -7,7 +7,7 @@ use std::{
 use common::ThreadError;
 use engine::{
     contexts::ProcessorContext,
-    definition::{definition::Definition, input::{CleanDefinitionInput, DefinitionInput}},
+    definition::{definition::CleanDefinition, input::{CleanDefinitionInput, DefinitionInput}},
     draft::draft_definition::DraftDefinition,
     errors::CharaError,
     processor::{Enrichment, ProcessorResult},
@@ -30,7 +30,7 @@ impl Definitions {
     pub fn read(input: &CleanDefinitionInput) -> Result<DefinitionDto, CharaError> {
         Definitions::read_output::<DefinitionDto>(input).map(|def| def.output)
     }
-    pub fn get(path: String) -> Result<Definition, CharaError> {
+    pub fn get(path: String) -> Result<CleanDefinition, CharaError> {
         Definitions::read_output::<DefinitionDto>(&DefinitionInput::File(path.clone()))
             .map(|read_output| DefinitionDto::map_overwrite_location(read_output.output, path))
     }
@@ -80,7 +80,7 @@ impl ForeignDefinitions for Definitions {
             .map(|read_output| DefinitionDto::map_draft_with_location(read_output.output, read_output.location))
     }
 
-    fn save(&self, definition: &Definition) -> Result<(), CharaError> {
+    fn save(&self, definition: &CleanDefinition) -> Result<(), CharaError> {
         let path = create_path("chara_results", None)?;
         info!("Save result at {path}");
         serde_json::to_writer(

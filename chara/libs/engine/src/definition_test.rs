@@ -9,7 +9,7 @@ mod definition {
     use crate::{
         contexts::{ContextDto, DefinitionContextDto, WritePermissionsDto},
         definition::{
-            definition::{Definition, Metadata},
+            definition::{CleanDefinition, Metadata},
             edge::{Edge, EdgeOverride},
         },
         processor::{Processor},
@@ -42,7 +42,7 @@ mod definition {
             other: Map::<String, Value>::new(),
         });
 
-        let definition = Definition {
+        let definition = CleanDefinition {
             parent: None,
             id: "123".to_string(),
             location: None,

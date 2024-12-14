@@ -13,8 +13,8 @@ pub enum DefinitionInput<TProcessor> {
     Processor(TProcessor),
 }
 pub type CleanDefinitionInput = DefinitionInput<CleanProcessorOverride>;
-impl Merge for CleanDefinitionInput {
-    fn merge(&mut self, other: &CleanDefinitionInput) {
+impl<TProcessor: Merge + Clone> Merge for DefinitionInput<TProcessor> {
+    fn merge(&mut self, other: &DefinitionInput<TProcessor>) {
         if let (DefinitionInput::Value(value), DefinitionInput::Value(other)) =
             (self.borrow_mut(), &other)
         {

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use engine::{
-    definition::definition::Definition,
+    definition::definition::CleanDefinition,
     errors::CharaError,
 };
 use common::ThreadError;
@@ -13,7 +13,7 @@ use crate::{definition::{
 
 
 impl DefinitionDto {
-    pub fn from_definition(definition: &Definition) -> Self {
+    pub fn from_definition(definition: &CleanDefinition) -> Self {
         DefinitionDto {
             id: Some(definition.id.clone()),
             name: definition.name.clone(),
@@ -26,7 +26,7 @@ impl DefinitionDto {
             environments: Self::read_environments(definition),
         }
     }
-    fn read_edges(definition: &Definition) -> HashMap<String, EdgeDto> {
+    fn read_edges(definition: &CleanDefinition) -> HashMap<String, EdgeDto> {
         definition
             .edges
             .iter()
@@ -67,7 +67,7 @@ impl DefinitionDto {
             .flatten()
             .collect()
     }
-    fn read_environments(definition: &Definition) -> HashMap<String, HashMap<String, String>> {
+    fn read_environments(definition: &CleanDefinition) -> HashMap<String, HashMap<String, String>> {
         definition
             .environments
             .iter()
@@ -83,7 +83,7 @@ impl DefinitionDto {
             .flatten()
             .collect()
     }
-    fn read_arguments(definition: &Definition) -> HashMap<String, Vec<String>> {
+    fn read_arguments(definition: &CleanDefinition) -> HashMap<String, Vec<String>> {
         definition
             .arguments
             .iter()
@@ -96,7 +96,7 @@ impl DefinitionDto {
             .flatten()
             .collect()
     }
-    fn read_processors(definition: &Definition) -> HashMap<String, ProcessorDto> {
+    fn read_processors(definition: &CleanDefinition) -> HashMap<String, ProcessorDto> {
         definition
             .processors
             .iter()
@@ -123,14 +123,14 @@ impl DefinitionDto {
             .flatten()
             .collect()
     }
-    fn read_tags(definition: &Definition) -> HashMap<String, TagDto> {
+    fn read_tags(definition: &CleanDefinition) -> HashMap<String, TagDto> {
         definition.tags.get("#").map_or(HashMap::new(), |tag| {
             tag.read()
                 .map_err(|_| CharaError::Thread(ThreadError::Poison))
                 .map_or(HashMap::new(), |tag| from_tags(&tag.value.tags))
         })
     }
-    fn read_metadata(definition: &Definition) -> HashMap<String, MetadataDto> {
+    fn read_metadata(definition: &CleanDefinition) -> HashMap<String, MetadataDto> {
         definition
             .metadata
             .iter()

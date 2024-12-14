@@ -6,7 +6,7 @@ use serde_json::{Map, Value};
 use crate::{
     cli::{Arguments, Environment},
     definition::{
-        definition::{Definition, Install, Metadata, RefTag, Tag},
+        definition::{CleanDefinition, Install, Metadata, RefTag, Tag},
         edge::{Edge, EdgeOverride},
         foreign_definition::ForeignDefinition,
         input::DefinitionInput,
