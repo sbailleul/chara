@@ -1,9 +1,17 @@
 use std::{collections::HashMap, path, sync::Arc};
 
 use engine::{
-    clean::clean_definition::{CleanDefinition, CleanProcessorOverride, RefTag}, definition::{
-        edge::{Edge, EdgeOverride}, foreign_definition::ForeignDefinition, input::DefinitionInput, install::Install, metadata::Metadata, tag::Tag
-    }, processor::Processor
+    clean::clean_definition::{CleanDefinition, CleanProcessorOverride, RefTag},
+    definition::{
+        edge::{Edge, EdgeOverride},
+        foreign_definition::ForeignDefinition,
+        input::DefinitionInput,
+        install::Install,
+        metadata::Metadata,
+        tag::Tag,
+    },
+    processor::Processor,
+    reference_value::ReferencedValue,
 };
 use serde_json::Value;
 
@@ -22,7 +30,7 @@ use crate::{
 };
 
 impl DefinitionDto {
-    pub fn map(self) -> CleanDefinition{
+    pub fn map(self) -> CleanDefinition {
         self.map_with_location(None)
     }
     pub fn map_with_location(self, location: Option<String>) -> CleanDefinition {
@@ -68,12 +76,11 @@ impl DefinitionDto {
         let root_path = "#".to_string();
         let root_tag = readonly(RefTag {
             r#ref: root_path.clone(),
-            value: Tag{
+            value: Tag {
                 label: None,
                 tags: HashMap::new(),
                 other: Value::Null,
-            }
-
+            },
         });
         let tags = to_tags(&root_tag, &root_path, &self.tags);
 
@@ -161,8 +168,10 @@ impl DefinitionDto {
                                         ) {
                                             Some(DefinitionInput::Processor(
                                                 CleanProcessorOverride::processor(
-                                                    processor,
-                                                    text_definition,
+                                                    &ReferencedValue {
+                                                        r#ref: text_definition.clone(),
+                                                        value: processor.clone(),
+                                                    },
                                                 ),
                                             ))
                                         } else {

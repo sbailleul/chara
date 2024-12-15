@@ -17,7 +17,7 @@ use crate::{
         metadata::Metadata,
         tag::Tag,
     },
-    processor::{ Processor, ProcessorOverrideWithRef},
+    processor::{Processor, ProcessorOverride},
     reference_value::ReferencedValue,
 };
 
@@ -32,16 +32,16 @@ pub type CleanMetadata = Metadata<CleanEdgeOverride, CleanProcessorOverride, Rea
 
 pub type CleanProcessor = Processor<Arguments, CleanInstall, Environment>;
 pub type CleanProcessorOverride =
-    ProcessorOverrideWithRef<Arguments, Environment, Readonly<CleanProcessor>>;
-    impl PartialEq for CleanProcessorOverride {
-        fn eq(&self, other: &Self) -> bool {
-            self.value.arguments == other.value.arguments
-                && self.value.environments == other.value.environments
-                && Arc::ptr_eq(&self.value.processor, &other.value.processor)
-        }
+    ProcessorOverride<Arguments, Environment, ReferencedValue<Readonly<CleanProcessor>>>;
+impl PartialEq for CleanProcessorOverride {
+    fn eq(&self, other: &Self) -> bool {
+        self.arguments == other.arguments
+            && self.environments == other.environments
+            && Arc::ptr_eq(&self.processor.value, &other.processor.value)
     }
-    impl Eq for CleanProcessorOverride {}
-    
+}
+impl Eq for CleanProcessorOverride {}
+
 #[derive(Debug, Clone)]
 pub struct CleanDefinition {
     pub parent: Option<Readonly<CleanDefinition>>,
@@ -117,7 +117,7 @@ impl CleanDefinition {
                                     metadata_key.clone(),
                                     metadata_lock.other.clone(),
                                 ),
-                                processor_reference: edge_context.processor.r#ref.clone(),
+                                processor_reference: edge_context.processor.processor.r#ref.clone(),
                                 write: WritePermissionsDto::edge(),
                                 edge: Some(ContextDto::new(
                                     edge_context.key.clone(),
@@ -131,7 +131,7 @@ impl CleanDefinition {
                             if processor == edge_context.processor {
                                 ProcessorContext {
                                     definition: DefinitionContextDto {
-                                        processor_reference: edge_context.processor.r#ref.clone(),
+                                        processor_reference: edge_context.processor.processor.r#ref.clone(),
                                         location: self.location.clone(),
                                         edge: Some(ContextDto::new(
                                             edge_context.key,
@@ -161,7 +161,7 @@ impl CleanDefinition {
                     if let Some(processor) = metadata_lock.processor.clone() {
                         processor_contexts.push(ProcessorContext {
                             definition: DefinitionContextDto {
-                                processor_reference: processor.r#ref.clone(),
+                                processor_reference: processor.processor.r#ref.clone(),
                                 location: self.location.clone(),
                                 edge: None,
                                 metadata: ContextDto::new(

@@ -17,9 +17,7 @@ use crate::{
     mappers::{
         arguments::to_draft_arguments,
         environments::to_draft_environments,
-        processors::{
-            to_draft_processor_override, to_node_draft_processor,
-        },
+        processors::{to_draft_processor_override, to_node_draft_processor},
         REFERENCE_PREFIX,
     },
 };
@@ -121,17 +119,17 @@ impl DefinitionDto {
                                             text_definition.trim_start_matches(REFERENCE_PREFIX),
                                         ) {
                                             Some(DefinitionInput::Processor(
-                                                DraftProcessorOverride::processor(
+                                                DraftProcessorOverride::processor(&Some(
                                                     LazyRef::referenced_value(
                                                         text_definition.clone(),
                                                         processor.clone(),
                                                     ),
-                                                ),
+                                                )),
                                             ))
                                         } else {
                                             Some(DefinitionInput::Processor(
-                                                DraftProcessorOverride::processor(LazyRef::Ref(
-                                                    text_definition.clone(),
+                                                DraftProcessorOverride::processor(&Some(
+                                                    LazyRef::Ref(text_definition.clone()),
                                                 )),
                                             ))
                                         }
@@ -190,12 +188,12 @@ impl DefinitionDto {
                                         .edges
                                         .get(reference.trim_start_matches(REFERENCE_PREFIX))
                                         .map(|edge| {
-                                            DraftEdgeOverride::edge(LazyRefOrValue::ReferencedValue(
-                                                ReferencedValue {
+                                            DraftEdgeOverride::edge(
+                                                LazyRefOrValue::ReferencedValue(ReferencedValue {
                                                     r#ref: reference.clone(),
                                                     value: edge.clone(),
-                                                },
-                                            ))
+                                                }),
+                                            )
                                         })
                                         .unwrap_or(DraftEdgeOverride::edge(LazyRefOrValue::Ref(
                                             reference.clone(),

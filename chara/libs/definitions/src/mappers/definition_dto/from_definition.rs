@@ -49,9 +49,9 @@ impl DefinitionDto {
                     .flatten();
                 let processor = edge.processor.as_ref().map(|processor| {
                     ReferenceOrObjectDto::Object(ProcessorOverrideDto {
-                        arguments: from_arguments(processor.value.arguments.clone()),
-                        environments: from_environments(processor.value.environments.clone()),
-                        reference: Some(processor.r#ref.clone()),
+                        arguments: from_arguments(processor.arguments.clone()),
+                        environments: from_environments(processor.environments.clone()),
+                        reference: Some(processor.processor.r#ref.clone()),
                     })
                 });
                 Ok::<(String, EdgeDto), CharaError>((
@@ -144,9 +144,9 @@ impl DefinitionDto {
                         processor: metadata.processor.as_ref().map(|processor| {
                             ReferenceOrObjectDto::<ProcessorOverrideDto>::Object(
                                 ProcessorOverrideDto {
-                                    arguments: from_arguments(processor.value.arguments.clone()),
-                                    environments: from_environments(processor.value.environments.clone()),
-                                    reference: Some(processor.r#ref.clone()),
+                                    arguments: from_arguments(processor.arguments.clone()),
+                                    environments: from_environments(processor.environments.clone()),
+                                    reference: Some(processor.processor.r#ref.clone()),
                                 },
                             )
                         }),

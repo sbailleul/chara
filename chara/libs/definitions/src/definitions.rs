@@ -6,7 +6,13 @@ use std::{
 
 use common::ThreadError;
 use engine::{
-    clean::clean_definition::{CleanDefinition, CleanDefinitionInput}, contexts::ProcessorContext, definition::input::DefinitionInput, draft::draft_definition::DraftDefinition, errors::CharaError, processor::{Enrichment, ProcessorResult}, Definitions as ForeignDefinitions
+    clean::clean_definition::{CleanDefinition, CleanDefinitionInput},
+    contexts::ProcessorContext,
+    definition::input::DefinitionInput,
+    draft::draft_definition::DraftDefinition,
+    errors::CharaError,
+    processor::{Enrichment, ProcessorResult},
+    Definitions as ForeignDefinitions,
 };
 use log::info;
 use serde::Deserialize;
@@ -71,8 +77,9 @@ impl Definitions {
 }
 impl ForeignDefinitions for Definitions {
     fn get(&self, input: &CleanDefinitionInput) -> Result<DraftDefinition, CharaError> {
-        Definitions::read_output::<DefinitionDto>(input)
-            .map(|read_output| DefinitionDto::map_draft_with_location(read_output.output, read_output.location))
+        Definitions::read_output::<DefinitionDto>(input).map(|read_output| {
+            DefinitionDto::map_draft_with_location(read_output.output, read_output.location)
+        })
     }
 
     fn save(&self, definition: &CleanDefinition) -> Result<(), CharaError> {
@@ -88,8 +95,8 @@ impl ForeignDefinitions for Definitions {
     fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, CharaError> {
         context
             .processor
-            .value
             .processor
+            .value
             .read()
             .or(Err(CharaError::Thread(ThreadError::Poison)))
             .and_then(|processor| {
@@ -113,7 +120,10 @@ impl ForeignDefinitions for Definitions {
                         Definitions::read_output::<ProcessorResultDto>(&DefinitionInput::File(path))
                     })
                     .map(|result| ProcessorResult {
-                        definition: result.output.definition.map(|def| def.map_draft_with_location(result.location)),
+                        definition: result
+                            .output
+                            .definition
+                            .map(|def| def.map_draft_with_location(result.location)),
                         enrichment: result.output.enrichment.map(|enrichment| Enrichment {
                             edge: enrichment.edge,
                             metadata: enrichment.metadata,

@@ -122,23 +122,22 @@ impl Cli for CleanProcessor {
 
 impl Inputs for CleanProcessorOverride {
     fn arguments(&self) -> Vec<Arguments> {
-        self.value
-            .processor
+        self.processor
+            .value
             .read()
             .map_or(vec![], |processor| processor.arguments())
             .into_iter()
-            .chain(self.value.arguments.clone().into_iter())
+            .chain(self.arguments.clone().into_iter())
             .collect()
     }
 
     fn environments(&self) -> Vec<Environment> {
-        self.value
-            .environments
+        self.environments
             .clone()
             .into_iter()
             .chain(
-                self.value
-                    .processor
+                self.processor
+                    .value
                     .read()
                     .map_or(vec![], |processor| processor.environments())
                     .into_iter(),
@@ -148,16 +147,16 @@ impl Inputs for CleanProcessorOverride {
 }
 impl Cli for CleanProcessorOverride {
     fn program(&self) -> Result<String, CharaError> {
-        self.value
-            .processor
+        self.processor
+            .value
             .read()
             .or(Err(CharaError::Thread(ThreadError::Poison)))
             .and_then(|processor| processor.program())
     }
 
     fn current_directory(&self) -> Result<Option<String>, CharaError> {
-        self.value
-            .processor
+        self.processor
+            .value
             .read()
             .map(|processor| processor.current_directory.clone())
             .or(Err(CharaError::Thread(ThreadError::Poison)))

@@ -5,8 +5,7 @@ use std::{
 
 use clean::clean_definition::{CleanDefinition, CleanDefinitionInput, CleanForeignDefinition};
 use common::{
-    thread::{readonly, Readonly},
-    ThreadError,
+    merge::Merge, thread::{readonly, Readonly}, ThreadError
 };
 use contexts::ProcessorContext;
 
@@ -47,13 +46,12 @@ fn process_definition(
         .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
     let results = get_definitions(&definition_value, definitions);
     for (foreign_definition, definition_output) in results {
-        let foreign_definition = foreign_definition
+        let mut foreign_definition = foreign_definition
             .write()
             .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
-        // TODO
-        // if let None = foreign_definition.output {
-        //     foreign_definition.output.merge(&definition_output);
-        // }
+        if let None = foreign_definition.output {
+            foreign_definition.output.merge(&definition_output);
+        }
     }
     let contexts = definition_value.processors_contexts();
     let results = enrich(contexts, definitions.clone());

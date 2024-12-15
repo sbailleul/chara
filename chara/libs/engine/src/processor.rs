@@ -55,26 +55,20 @@ impl<TArguments: Merge + Clone, TEnvironment: Merge + Clone, TProcessor: Merge +
     }
 }
 
-pub type ProcessorOverrideWithRef<TArguments, TEnvironment, TProcessor> =
-    ReferencedValue<ProcessorOverride<TArguments, TEnvironment, TProcessor>>;
-
 impl<TArguments: Clone, TEnvironment: Clone, TProcessor: Clone>
-    ProcessorOverrideWithRef<TArguments, TEnvironment, TProcessor>
+    ProcessorOverride<TArguments, TEnvironment, TProcessor>
 {
-    pub fn processor(processor: &TProcessor, reference: &String) -> Self {
+    pub fn processor(processor: &TProcessor) -> Self {
         Self {
-            r#ref: reference.clone(),
-            value: ProcessorOverride {
-                arguments: vec![],
-                environments: vec![],
-                processor: processor.clone(),
-            },
+            arguments: vec![],
+            environments: vec![],
+            processor: processor.clone(),
         }
     }
     pub fn from_with(&self, arguments: Vec<TArguments>, environments: Vec<TEnvironment>) -> Self {
         let mut processor = self.clone();
-        processor.value.arguments = [arguments, processor.value.arguments].concat();
-        processor.value.environments = [environments, processor.value.environments].concat();
+        processor.arguments = [arguments, processor.arguments].concat();
+        processor.environments = [environments, processor.environments].concat();
         processor
     }
 }

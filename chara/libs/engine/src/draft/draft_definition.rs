@@ -28,15 +28,7 @@ pub type DraftProcessor = Processor<DraftArguments, DraftInstall, DraftEnvironme
 pub type DraftProcessorOverride =
     ProcessorOverride<DraftArguments, DraftEnvironments, Option<LazyRef<DraftProcessor>>>;
 
-impl DraftProcessorOverride {
-    pub fn processor(processor: LazyRef<DraftProcessor>) -> Self {
-        Self {
-            arguments: vec![],
-            environments: vec![],
-            processor: Some(processor),
-        }
-    }
-}
+
 
 pub type DraftEdge = Edge<DraftProcessorOverride, DraftForeignDefinition>;
 
