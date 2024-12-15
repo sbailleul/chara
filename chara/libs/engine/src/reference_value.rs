@@ -91,7 +91,41 @@ pub enum LazyRefOrValue<T> {
     ReferencedValue(ReferencedValue<Readonly<T>>),
     Value(T),
 }
+impl<T: Merge + Clone> Merge for LazyRefOrValue<T> {
+    fn merge(&mut self, other: &Self) {
+        match (self.borrow_mut(), other) {
+            (LazyRefOrValue::Ref(ref1), LazyRefOrValue::Ref(ref2)) => *ref1 = ref2.clone(),
+            (LazyRefOrValue::Ref(_), LazyRefOrValue::ReferencedValue(referenced_value)) => {
+                *self = LazyRefOrValue::ReferencedValue(referenced_value.clone())
+            }
+            (LazyRefOrValue::ReferencedValue(referenced_value), LazyRefOrValue::Ref(ref2)) => {
+                referenced_value.r#ref = ref2.clone()
+            }
+            (
+                LazyRefOrValue::ReferencedValue(referenced_value1),
+                LazyRefOrValue::ReferencedValue(referenced_value2),
+            ) => referenced_value1.merge(referenced_value2),
 
+            (LazyRefOrValue::ReferencedValue(referenced_value), LazyRefOrValue::Value(v2)) => {
+                if let Ok(mut v1) = referenced_value.value.write() {
+                    v1.merge(&v2);
+                }
+            }
+            (LazyRefOrValue::Value(v1), LazyRefOrValue::ReferencedValue(referenced_value)) => {
+                if let Ok(v2) = referenced_value.value.read() {
+                    v1.merge(&v2);
+                }
+                *self = LazyRefOrValue::ReferencedValue(ReferencedValue {
+                    r#ref: referenced_value.r#ref.clone(),
+                    value: readonly(v1.clone()),
+                })
+            }
+            (LazyRefOrValue::Value(v1), LazyRefOrValue::Value(v2)) => v1.merge(v2),
+            (LazyRefOrValue::Ref(_), LazyRefOrValue::Value(_)) => *self = other.clone(),
+            (LazyRefOrValue::Value(_), LazyRefOrValue::Ref(_)) => (),
+        }
+    }
+}
 impl<T> LazyRefOrValue<T> {
     pub fn reference(&self) -> Option<String> {
         match self {

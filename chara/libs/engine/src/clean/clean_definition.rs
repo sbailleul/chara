@@ -2,12 +2,23 @@ use common::{
     merge::{Merge, Overwrite},
     thread::Readonly,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
-    cli::{Arguments, Environment}, contexts::{
+    cli::{Arguments, Environment},
+    contexts::{
         ContextDto, DefinitionContextDto, EdgeContext, ProcessorContext, WritePermissionsDto,
-    }, definition::{edge::{Edge, EdgeOverride}, foreign_definition::ForeignDefinition, input::DefinitionInput, install::Install, metadata::Metadata, tag::Tag}, processor::{CleanProcessor, CleanProcessorOverride}, reference_value::ReferencedValue
+    },
+    definition::{
+        edge::{Edge, EdgeOverride},
+        foreign_definition::ForeignDefinition,
+        input::DefinitionInput,
+        install::Install,
+        metadata::Metadata,
+        tag::Tag,
+    },
+    processor::{ Processor, ProcessorOverrideWithRef},
+    reference_value::ReferencedValue,
 };
 
 pub type CleanEdge = Edge<CleanProcessorOverride, CleanForeignDefinition>;
@@ -19,15 +30,18 @@ pub type CleanInstall = Install<Arguments, Environment>;
 pub type RefTag = ReferencedValue<Tag>;
 pub type CleanMetadata = Metadata<CleanEdgeOverride, CleanProcessorOverride, Readonly<RefTag>>;
 
-impl Merge for CleanForeignDefinition {
-    fn merge(&mut self, other: &Self) {
-        self.input.merge(&other.input);
-        // TODO
-        // self.output.merge(&other.output);
+pub type CleanProcessor = Processor<Arguments, CleanInstall, Environment>;
+pub type CleanProcessorOverride =
+    ProcessorOverrideWithRef<Arguments, Environment, Readonly<CleanProcessor>>;
+    impl PartialEq for CleanProcessorOverride {
+        fn eq(&self, other: &Self) -> bool {
+            self.value.arguments == other.value.arguments
+                && self.value.environments == other.value.environments
+                && Arc::ptr_eq(&self.value.processor, &other.value.processor)
+        }
     }
-}
-
-
+    impl Eq for CleanProcessorOverride {}
+    
 #[derive(Debug, Clone)]
 pub struct CleanDefinition {
     pub parent: Option<Readonly<CleanDefinition>>,

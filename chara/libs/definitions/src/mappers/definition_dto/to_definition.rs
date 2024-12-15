@@ -1,9 +1,9 @@
 use std::{collections::HashMap, path, sync::Arc};
 
 use engine::{
-    clean::clean_definition::{CleanDefinition, RefTag}, definition::{
+    clean::clean_definition::{CleanDefinition, CleanProcessorOverride, RefTag}, definition::{
         edge::{Edge, EdgeOverride}, foreign_definition::ForeignDefinition, input::DefinitionInput, install::Install, metadata::Metadata, tag::Tag
-    }, processor::{CleanProcessorOverride, Processor}
+    }, processor::Processor
 };
 use serde_json::Value;
 

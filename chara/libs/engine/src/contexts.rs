@@ -1,8 +1,8 @@
+use common::thread::Readonly;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use common::thread::Readonly;
 
-use crate::{ clean::clean_definition::CleanMetadata, processor::CleanProcessorOverride};
+use crate::clean::clean_definition::{CleanMetadata, CleanProcessorOverride};
 
 #[derive(Debug)]
 pub struct ProcessorContext {

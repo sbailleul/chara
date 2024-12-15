@@ -4,7 +4,10 @@ use common::{merge::Merge, thread::Readonly};
 use serde_json::{Map, Value};
 
 use crate::{
-    clean::clean_definition::CleanInstall, cli::{Arguments, Environment}, draft::draft_definition::DraftDefinition, reference_value::ReferencedValue
+    clean::clean_definition::{CleanInstall, CleanProcessor},
+    cli::{Arguments, Environment},
+    draft::draft_definition::DraftDefinition,
+    reference_value::ReferencedValue,
 };
 
 #[derive(Debug)]
@@ -26,8 +29,9 @@ pub struct Processor<TArguments, TInstall, TEnvironment> {
     pub environments: Vec<TEnvironment>,
     pub current_directory: Option<String>,
 }
-pub type CleanProcessor = Processor<Arguments, CleanInstall, Environment>;
-impl Merge for CleanProcessor {
+impl<TArguments: Merge + Clone, TInstall: Merge + Clone, TEnvironment: Merge + Clone> Merge
+    for Processor<TArguments, TInstall, TEnvironment>
+{
     fn merge(&mut self, other: &Self) {
         self.arguments.merge(&other.arguments);
         self.program = other.program.clone();
@@ -41,11 +45,18 @@ pub struct ProcessorOverride<TArguments, TEnvironment, TProcessor> {
     pub environments: Vec<TEnvironment>,
     pub processor: TProcessor,
 }
-type ProcessorOverrideWithRef<TArguments, TEnvironment, TProcessor> =
-    ReferencedValue<ProcessorOverride<TArguments, TEnvironment, TProcessor>>;
+impl<TArguments: Merge + Clone, TEnvironment: Merge + Clone, TProcessor: Merge + Clone> Merge
+    for ProcessorOverride<TArguments, TEnvironment, TProcessor>
+{
+    fn merge(&mut self, other: &Self) {
+        self.arguments.merge(&other.arguments);
+        self.environments.merge(&other.environments);
+        self.processor.merge(&other.processor);
+    }
+}
 
-pub type CleanProcessorOverride =
-    ProcessorOverrideWithRef<Arguments, Environment, Readonly<CleanProcessor>>;
+pub type ProcessorOverrideWithRef<TArguments, TEnvironment, TProcessor> =
+    ReferencedValue<ProcessorOverride<TArguments, TEnvironment, TProcessor>>;
 
 impl<TArguments: Clone, TEnvironment: Clone, TProcessor: Clone>
     ProcessorOverrideWithRef<TArguments, TEnvironment, TProcessor>
@@ -67,23 +78,3 @@ impl<TArguments: Clone, TEnvironment: Clone, TProcessor: Clone>
         processor
     }
 }
-impl Merge for CleanProcessorOverride {
-    fn merge(&mut self, other: &Self) {
-        self.value
-            .arguments
-            .append(&mut other.value.arguments.clone());
-        self.value
-            .environments
-            .append(&mut other.value.environments.clone());
-        self.r#ref = other.r#ref.clone();
-        // self.processor.read().unwrap().
-    }
-}
-impl PartialEq for CleanProcessorOverride {
-    fn eq(&self, other: &Self) -> bool {
-        self.value.arguments == other.value.arguments
-            && self.value.environments == other.value.environments
-            && Arc::ptr_eq(&self.value.processor, &other.value.processor)
-    }
-}
-impl Eq for CleanProcessorOverride {}

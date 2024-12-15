@@ -1,14 +1,14 @@
+use common::merge::Merge;
 
 use crate::draft::draft_definition::DraftDefinition;
-
 
 #[derive(Debug, Clone)]
 pub struct ForeignDefinition<TInput> {
     pub input: Option<TInput>,
     pub output: Option<DraftDefinition>,
 }
-impl <TInput> ForeignDefinition<TInput> {
-    pub fn input(input: TInput ) -> Self {
+impl<TInput> ForeignDefinition<TInput> {
+    pub fn input(input: TInput) -> Self {
         ForeignDefinition {
             input: Some(input),
             output: None,
@@ -22,3 +22,9 @@ impl <TInput> ForeignDefinition<TInput> {
     }
 }
 
+impl<T: Merge + Clone> Merge for ForeignDefinition<T> {
+    fn merge(&mut self, other: &Self) {
+        self.input.merge(&other.input);
+        self.output.merge(&other.output);
+    }
+}

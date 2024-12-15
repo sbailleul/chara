@@ -1,5 +1,8 @@
 use engine::{
-    clean::clean_definition::CleanDefinition, draft::draft_definition::{DraftDefinition, DraftProcessorOverride}, processor::{CleanProcessorOverride, ProcessorOverride}, reference_value::LazyRef
+    clean::clean_definition::{CleanDefinition, CleanProcessorOverride},
+    draft::draft_definition::{DraftDefinition, DraftProcessorOverride},
+    processor::ProcessorOverride,
+    reference_value::LazyRef,
 };
 
 use crate::definition::{ProcessorOverrideDto, ReferenceOrObjectDto};
@@ -95,13 +98,13 @@ pub fn to_draft_processor_override(
                 reference.clone(),
             )))
     } else {
-        DraftProcessorOverride{
+        DraftProcessorOverride {
             arguments: to_draft_arguments(&processor_override.arguments, &definition.arguments),
             environments: to_draft_environments(
                 &processor_override.environments,
                 &definition.environments,
             ),
-            processor: None
+            processor: None,
         }
     }
 }
