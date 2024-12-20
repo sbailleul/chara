@@ -2,7 +2,7 @@ use common::{merge::Merge, thread::Readonly};
 use serde_json::{Map, Value};
 
 use crate::{
-    cli::{DraftArguments, DraftEnvironments}, draft::draft_definition::DraftDefinition, processor::DraftProcessorOverride, reference_value::LazyRefOrValue
+    cli::{DraftArguments, DraftEnvironments}, definition::definition::Definition, processor::DraftProcessorOverride, reference_value::LazyRefOrValue
 };
 
 use super::foreign_definition::ForeignDefinition;
@@ -28,7 +28,7 @@ pub struct EdgeOverride {
     pub environments: Vec<DraftEnvironments>,
     pub edge: LazyRefOrValue<Edge>,
     pub other: Map<String, Value>,
-    pub definition: Option<DraftDefinition>,
+    pub definition: Option<Definition>,
 }
 
 impl Merge for EdgeOverride {

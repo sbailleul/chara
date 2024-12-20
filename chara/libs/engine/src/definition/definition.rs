@@ -16,15 +16,14 @@ use crate::{
         tag::RefTag,
     },
     processor::Processor,
-    reference_value::LazyRefOrValue,
 };
 
 
 
 
 #[derive(Debug, Clone)]
-pub struct DraftDefinition {
-    pub parent: Option<Readonly<DraftDefinition>>,
+pub struct Definition {
+    pub parent: Option<Readonly<Definition>>,
     pub name: String,
     pub id: String,
     pub location: Option<String>,
@@ -37,7 +36,7 @@ pub struct DraftDefinition {
     pub foreign_definitions: HashMap<String, Readonly<ForeignDefinition>>,
 }
 
-impl Merge for DraftDefinition {
+impl Merge for Definition {
     fn merge(&mut self, other: &Self) {
         self.name = other.name.clone();
         self.id = other.id.clone();
@@ -51,7 +50,7 @@ impl Merge for DraftDefinition {
         self.foreign_definitions.merge(&other.foreign_definitions);
     }
 }
-impl DraftDefinition {
+impl Definition {
     pub fn processors_contexts(&self) -> Vec<ProcessorContext> {
         let definition_contexts = self.metadata.iter().map(|(metadata_key, metadata_value)| {
             metadata_value.read().ok().map(|metadata_lock| {

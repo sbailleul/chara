@@ -7,7 +7,7 @@ use engine::{
 
 use super::REFERENCE_PREFIX;
 
-pub fn to_draft_arguments(
+pub fn to_arguments(
     dto_arguments: &Vec<String>,
     arguments: &HashMap<String, Readonly<Vec<String>>>,
 ) -> Vec<DraftArguments> {
@@ -31,7 +31,7 @@ pub fn to_draft_arguments(
 }
 
 
-pub fn from_draft_arguments(arguments: Vec<DraftArguments>) -> Vec<String> {
+pub fn from_arguments(arguments: Vec<DraftArguments>) -> Vec<String> {
     arguments
         .iter()
         .flat_map(|arguments| match arguments {

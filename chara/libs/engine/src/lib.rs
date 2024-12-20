@@ -11,7 +11,7 @@ use common::{
 use contexts::ProcessorContext;
 
 use definition::{foreign_definition::ForeignDefinition, input::DefinedDefinitionInput};
-use draft::draft_definition::{ DraftDefinition};
+use definition::definition::Definition;
 use errors::CharaError;
 use log::error;
 use processor::ProcessorResult;
@@ -20,29 +20,28 @@ pub mod cli;
 pub mod contexts;
 pub mod definition;
 mod definition_test;
-pub mod draft;
 pub mod errors;
 pub mod processor;
 pub mod reference_value;
 pub trait Definitions: Send + Sync {
-    fn get(&self, definition: &DefinedDefinitionInput) -> Result<DraftDefinition, CharaError>;
+    fn get(&self, definition: &DefinedDefinitionInput) -> Result<Definition, CharaError>;
     fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, CharaError>;
-    fn save(&self, definition: &DraftDefinition) -> Result<(), CharaError>;
+    fn save(&self, definition: &Definition) -> Result<(), CharaError>;
 }
 
 pub fn run(
-    definition: DraftDefinition,
+    definition: Definition,
     definitions: Arc<dyn Definitions>,
-) -> Result<DraftDefinition, CharaError> {
+) -> Result<Definition, CharaError> {
     let definition = process_definition(readonly(definition.clone()), &definitions)?;
     definitions.save(&definition)?;
     Ok(definition)
 }
 
 fn process_definition(
-    definition: Readonly<DraftDefinition>,
+    definition: Readonly<Definition>,
     definitions: &Arc<dyn Definitions>,
-) -> Result<DraftDefinition, CharaError> {
+) -> Result<Definition, CharaError> {
     let definition_value = definition
         .read()
         .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
@@ -63,7 +62,7 @@ fn process_definition(
 }
 
 fn handle_results(
-    source_definition: Readonly<DraftDefinition>,
+    source_definition: Readonly<Definition>,
     results: Vec<(ProcessorContext, ProcessorResult)>,
     definitions: &Arc<dyn Definitions>,
 ) -> Result<(), CharaError> {
@@ -113,9 +112,9 @@ fn handle_results(
 }
 
 fn get_definitions(
-    definition: &DraftDefinition,
+    definition: &Definition,
     definitions: &Arc<dyn Definitions>,
-) -> Vec<(Readonly<ForeignDefinition>, Option<DraftDefinition>)> {
+) -> Vec<(Readonly<ForeignDefinition>, Option<Definition>)> {
     definition
         .foreign_definitions
         .iter()

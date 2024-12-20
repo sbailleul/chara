@@ -4,7 +4,7 @@ use engine::{
     definition::{
         edge::{Edge, EdgeOverride}, foreign_definition::ForeignDefinition, input::{BaseDefinitionInput, DraftDefinitionInput}, install::Install, metadata::Metadata, tag::{RefTag, Tag}
     },
-    draft::draft_definition::DraftDefinition,
+    definition::definition::Definition,
     processor::{DraftProcessorOverride, Processor},
     reference_value::{LazyRef, LazyRefOrValue, ReferencedValue},
 };
@@ -16,26 +16,26 @@ use uuid::Uuid;
 use crate::{
     definition::{DefinitionDto, ForeignDefinitionDto, ReferenceOrObjectDto},
     mappers::{
-        arguments::to_draft_arguments,
+        arguments::to_arguments,
         environments::to_environments,
-        processors::{to_draft_processor_override, to_node_draft_processor},
+        processors::{to_processor_override, to_node_processor},
         tags::to_tags,
         REFERENCE_PREFIX,
     },
 };
 
 impl DefinitionDto {
-    pub fn map_draft(self) -> DraftDefinition {
-        self.map_draft_with_location(None)
+    pub fn map_draft(self) -> Definition {
+        self.map_with_location(None)
     }
-    pub fn map_draft_overwrite_location(self, location: String) -> DraftDefinition {
+    pub fn map_overwrite_location(self, location: String) -> Definition {
         let location = Some(location);
-        let mut definition = self.map_draft_with_location(location.clone());
+        let mut definition = self.map_with_location(location.clone());
         definition.location = location;
         definition
     }
-    pub fn map_draft_with_location(self, location: Option<String>) -> DraftDefinition {
-        let mut definition = DraftDefinition {
+    pub fn map_with_location(self, location: Option<String>) -> Definition {
+        let mut definition = Definition {
             parent: None,
             id: self.id.clone().unwrap_or(Uuid::new_v4().to_string()),
             location: self.location.clone().or(location),
@@ -48,10 +48,10 @@ impl DefinitionDto {
             tags: HashMap::new(),
             foreign_definitions: HashMap::new(),
         };
-        self.set_draft_processors(&mut definition);
-        self.set_draft_edges(&mut definition);
+        self.set_processors(&mut definition);
+        self.set_edges(&mut definition);
         definition.tags = self.list_tags();
-        self.set_draft_metadata(&mut definition);
+        self.set_metadata(&mut definition);
         definition
     }
     pub fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {
@@ -95,7 +95,7 @@ impl DefinitionDto {
         all_tags
     }
 
-    fn set_draft_processors(&self, definition: &mut DraftDefinition) {
+    fn set_processors(&self, definition: &mut Definition) {
         definition.processors = self
             .processors
             .iter()
@@ -103,10 +103,10 @@ impl DefinitionDto {
                 (
                     key.clone(),
                     readonly(Processor {
-                        arguments: to_draft_arguments(&processor.arguments, &definition.arguments),
+                        arguments: to_arguments(&processor.arguments, &definition.arguments),
                         program: processor.program.clone(),
                         install: processor.install.as_ref().map(|install| Install {
-                            arguments: to_draft_arguments(
+                            arguments: to_arguments(
                                 &install.arguments,
                                 &definition.arguments,
                             ),
@@ -128,7 +128,7 @@ impl DefinitionDto {
             .collect()
     }
 
-    fn set_draft_edges(&self, definition: &mut DraftDefinition) {
+    fn set_edges(&self, definition: &mut Definition) {
         definition.edges = self
             .edges
             .iter()
@@ -146,7 +146,7 @@ impl DefinitionDto {
                                 foreign_definition
                             {
                                 let foreign_definition = readonly(ForeignDefinition::output(
-                                    ready_definition.clone().map_draft_with_location(None),
+                                    ready_definition.clone().map_with_location(None),
                                 ));
                                 definition
                                     .foreign_definitions
@@ -182,7 +182,7 @@ impl DefinitionDto {
                                     }
                                     ForeignDefinitionDto::Processor(processor_override) => {
                                         Some(DraftDefinitionInput::Processor(
-                                            to_draft_processor_override(
+                                            to_processor_override(
                                                 processor_override,
                                                 definition,
                                             ),
@@ -209,14 +209,14 @@ impl DefinitionDto {
                         processor: edge
                             .processor
                             .as_ref()
-                            .map(|processor| to_node_draft_processor(&processor, &definition)),
+                            .map(|processor| to_node_processor(&processor, &definition)),
                         other: edge.other.clone(),
                     }),
                 )
             })
             .collect()
     }
-    fn set_draft_metadata(&self, definition: &mut DraftDefinition) {
+    fn set_metadata(&self, definition: &mut Definition) {
         definition.metadata = self
             .metadata
             .iter()
@@ -255,7 +255,7 @@ impl DefinitionDto {
                                                 .trim_start_matches(REFERENCE_PREFIX),
                                         )
                                         .map(|edge| EdgeOverride {
-                                            arguments: to_draft_arguments(
+                                            arguments: to_arguments(
                                                 &metadata_edge.arguments,
                                                 &definition.arguments,
                                             ),
@@ -274,7 +274,7 @@ impl DefinitionDto {
                                                 .map(Self::map_draft),
                                         })
                                         .unwrap_or(EdgeOverride {
-                                            arguments: to_draft_arguments(
+                                            arguments: to_arguments(
                                                 &metadata_edge.arguments,
                                                 &definition.arguments,
                                             ),
@@ -315,7 +315,7 @@ impl DefinitionDto {
                         processor: metadata
                             .processor
                             .as_ref()
-                            .map(|processor| to_node_draft_processor(processor, definition)),
+                            .map(|processor| to_node_processor(processor, definition)),
                     }),
                 )
             })

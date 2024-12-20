@@ -2,7 +2,7 @@ use common::{merge::Merge, thread::Readonly};
 use serde_json::{Map, Value};
 
 use crate::{
-    cli::{DraftArguments, DraftEnvironments}, definition::install::Install, draft::draft_definition::DraftDefinition, reference_value::{LazyRef, ReferencedValue}
+    cli::{DraftArguments, DraftEnvironments}, definition::install::Install, definition::definition::Definition, reference_value::{LazyRef, ReferencedValue}
 };
 
 #[derive(Debug)]
@@ -13,7 +13,7 @@ pub struct Enrichment {
 #[derive(Debug)]
 pub struct ProcessorResult {
     pub enrichment: Option<Enrichment>,
-    pub definition: Option<DraftDefinition>,
+    pub definition: Option<Definition>,
 }
 
 #[derive(Debug, Clone)]

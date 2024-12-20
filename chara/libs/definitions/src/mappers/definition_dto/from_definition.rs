@@ -1,35 +1,31 @@
 use std::collections::HashMap;
 
 use common::ThreadError;
-use engine::{
-    draft::draft_definition::DraftDefinition, errors::CharaError,
-};
+use engine::{definition::definition::Definition, errors::CharaError};
 
 use crate::{
     definition::{
         DefinitionDto, EdgeDto, ForeignDefinitionDto, InstallDto, MetadataDto, MetadataEdge,
         ProcessorDto, ProcessorOverrideDto, ReferenceOrObjectDto, TagDto,
     },
-    mappers::{
-        arguments::from_draft_arguments, environments::from_environments, tags::from_tags,
-    },
+    mappers::{arguments::from_arguments, environments::from_environments, tags::from_tags},
 };
 
 impl DefinitionDto {
-    pub fn from_draft_definition(definition: &DraftDefinition) -> Self {
+    pub fn from_definition(definition: &Definition) -> Self {
         DefinitionDto {
             id: Some(definition.id.clone()),
             name: definition.name.clone(),
             location: definition.location.clone(),
-            metadata: Self::read_draft_metadata(definition),
-            edges: Self::read_draft_edges(definition),
-            tags: Self::read_draft_tags(definition),
-            processors: Self::read_draft_processors(definition),
-            arguments: Self::read_draft_arguments(definition),
-            environments: Self::read_draft_environments(definition),
+            metadata: Self::read_metadata(definition),
+            edges: Self::read_edges(definition),
+            tags: Self::read_tags(definition),
+            processors: Self::read_processors(definition),
+            arguments: Self::read_arguments(definition),
+            environments: Self::read_environments(definition),
         }
     }
-    fn read_draft_edges(definition: &DraftDefinition) -> HashMap<String, EdgeDto> {
+    fn read_edges(definition: &Definition) -> HashMap<String, EdgeDto> {
         definition
             .edges
             .iter()
@@ -45,7 +41,7 @@ impl DefinitionDto {
                             .read()
                             .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
                         Ok(definition.output.as_ref().map(|definition| {
-                            let definition = DefinitionDto::from_draft_definition(&definition);
+                            let definition = DefinitionDto::from_definition(&definition);
                             ForeignDefinitionDto::Definition(definition)
                         }))
                     })
@@ -53,7 +49,7 @@ impl DefinitionDto {
                     .flatten();
                 let processor = edge.processor.as_ref().map(|processor| {
                     ReferenceOrObjectDto::Object(ProcessorOverrideDto {
-                        arguments: from_draft_arguments(processor.arguments.clone()),
+                        arguments: from_arguments(processor.arguments.clone()),
                         environments: from_environments(processor.environments.clone()),
                         reference: processor
                             .processor
@@ -73,9 +69,7 @@ impl DefinitionDto {
             .flatten()
             .collect()
     }
-    fn read_draft_environments(
-        definition: &DraftDefinition,
-    ) -> HashMap<String, HashMap<String, String>> {
+    fn read_environments(definition: &Definition) -> HashMap<String, HashMap<String, String>> {
         definition
             .environments
             .iter()
@@ -91,7 +85,7 @@ impl DefinitionDto {
             .flatten()
             .collect()
     }
-    fn read_draft_arguments(definition: &DraftDefinition) -> HashMap<String, Vec<String>> {
+    fn read_arguments(definition: &Definition) -> HashMap<String, Vec<String>> {
         definition
             .arguments
             .iter()
@@ -104,7 +98,7 @@ impl DefinitionDto {
             .flatten()
             .collect()
     }
-    fn read_draft_processors(definition: &DraftDefinition) -> HashMap<String, ProcessorDto> {
+    fn read_processors(definition: &Definition) -> HashMap<String, ProcessorDto> {
         definition
             .processors
             .iter()
@@ -115,12 +109,12 @@ impl DefinitionDto {
                 Ok::<(String, ProcessorDto), CharaError>((
                     k.clone(),
                     ProcessorDto {
-                        arguments: from_draft_arguments(processor.arguments.clone()),
+                        arguments: from_arguments(processor.arguments.clone()),
                         current_directory: processor.current_directory.clone(),
                         environments: from_environments(processor.environments.clone()),
                         program: processor.program.clone(),
                         install: processor.install.as_ref().map(|install| InstallDto {
-                            arguments: from_draft_arguments(install.arguments.clone()),
+                            arguments: from_arguments(install.arguments.clone()),
                             environments: from_environments(install.environments.clone()),
                             current_directory: install.current_directory.clone(),
                             program: install.program.clone(),
@@ -131,14 +125,14 @@ impl DefinitionDto {
             .flatten()
             .collect()
     }
-    fn read_draft_tags(definition: &DraftDefinition) -> HashMap<String, TagDto> {
+    fn read_tags(definition: &Definition) -> HashMap<String, TagDto> {
         definition.tags.get("#").map_or(HashMap::new(), |tag| {
             tag.read()
                 .map_err(|_| CharaError::Thread(ThreadError::Poison))
                 .map_or(HashMap::new(), |tag| from_tags(&tag.value.tags))
         })
     }
-    fn read_draft_metadata(definition: &DraftDefinition) -> HashMap<String, MetadataDto> {
+    fn read_metadata(definition: &Definition) -> HashMap<String, MetadataDto> {
         definition
             .metadata
             .iter()
@@ -153,10 +147,8 @@ impl DefinitionDto {
                         processor: metadata.processor.as_ref().map(|processor| {
                             ReferenceOrObjectDto::<ProcessorOverrideDto>::Object(
                                 ProcessorOverrideDto {
-                                    arguments: from_draft_arguments(processor.arguments.clone()),
-                                    environments: from_environments(
-                                        processor.environments.clone(),
-                                    ),
+                                    arguments: from_arguments(processor.arguments.clone()),
+                                    environments: from_environments(processor.environments.clone()),
                                     reference: processor
                                         .processor
                                         .as_ref()
@@ -175,15 +167,13 @@ impl DefinitionDto {
                             .iter()
                             .map(|(k, edge)| {
                                 ReferenceOrObjectDto::<MetadataEdge>::Object(MetadataEdge {
-                                    arguments: from_draft_arguments(edge.arguments.clone()),
+                                    arguments: from_arguments(edge.arguments.clone()),
                                     definition: edge
                                         .definition
                                         .as_ref()
-                                        .map(DefinitionDto::from_draft_definition),
+                                        .map(DefinitionDto::from_definition),
 
-                                    environments: from_environments(
-                                        edge.environments.clone(),
-                                    ),
+                                    environments: from_environments(edge.environments.clone()),
                                     other: edge.other.clone(),
                                     r#ref: k.clone(),
                                 })

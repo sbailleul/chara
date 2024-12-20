@@ -8,7 +8,7 @@ use common::ThreadError;
 use engine::{
     contexts::ProcessorContext,
     definition::input::{BaseDefinitionInput, DefinedDefinitionInput},
-    draft::draft_definition::DraftDefinition,
+    definition::definition::Definition,
     errors::CharaError,
     processor::{Enrichment, ProcessorResult},
     Definitions as ForeignDefinitions,
@@ -30,14 +30,14 @@ impl Definitions {
     pub fn read(input: &DefinedDefinitionInput) -> Result<DefinitionDto, CharaError> {
         Definitions::read_output::<DefinitionDto>(input).map(|def| def.output)
     }
-    pub fn get(path: String) -> Result<DraftDefinition, CharaError> {
+    pub fn get(path: String) -> Result<Definition, CharaError> {
         Definitions::read_output::<DefinitionDto>(&BaseDefinitionInput::File(path.clone())).map(
-            |read_output| DefinitionDto::map_draft_overwrite_location(read_output.output, path),
+            |read_output| DefinitionDto::map_overwrite_location(read_output.output, path),
         )
     }
-    pub fn get_draft(path: String) -> Result<DraftDefinition, CharaError> {
+    pub fn get_draft(path: String) -> Result<Definition, CharaError> {
         Definitions::read_output::<DefinitionDto>(&BaseDefinitionInput::File(path.clone())).map(
-            |read_output| DefinitionDto::map_draft_overwrite_location(read_output.output, path),
+            |read_output| DefinitionDto::map_overwrite_location(read_output.output, path),
         )
     }
     fn read_output<T: for<'a> Deserialize<'a>>(
@@ -84,18 +84,18 @@ impl Definitions {
     }
 }
 impl ForeignDefinitions for Definitions {
-    fn get(&self, input: &DefinedDefinitionInput) -> Result<DraftDefinition, CharaError> {
+    fn get(&self, input: &DefinedDefinitionInput) -> Result<Definition, CharaError> {
         Definitions::read_output::<DefinitionDto>(input).map(|read_output| {
-            DefinitionDto::map_draft_with_location(read_output.output, read_output.location)
+            DefinitionDto::map_with_location(read_output.output, read_output.location)
         })
     }
 
-    fn save(&self, definition: &DraftDefinition) -> Result<(), CharaError> {
+    fn save(&self, definition: &Definition) -> Result<(), CharaError> {
         let path = create_path("chara_results", None)?;
         info!("Save result at {path}");
         serde_json::to_writer(
             File::create(path).map_err(CharaError::IO)?,
-            &DefinitionDto::from_draft_definition(definition),
+            &DefinitionDto::from_definition(definition),
         )
         .map_err(CharaError::Json)?;
         Ok(())
@@ -131,7 +131,7 @@ impl ForeignDefinitions for Definitions {
                         definition: result
                             .output
                             .definition
-                            .map(|def| def.map_draft_with_location(result.location)),
+                            .map(|def| def.map_with_location(result.location)),
                         enrichment: result.output.enrichment.map(|enrichment| Enrichment {
                             edge: enrichment.edge,
                             metadata: enrichment.metadata,
