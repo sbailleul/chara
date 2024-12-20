@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use common::thread::Readonly;
 use engine::{
-    draft::draft_definition::DraftArguments,
-    reference_value::{LazyRefOrValue, ReferencedValue},
+    cli::DraftArguments, reference_value::{LazyRefOrValue, ReferencedValue}
 };
 
 use super::REFERENCE_PREFIX;

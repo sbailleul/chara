@@ -3,10 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::{
-    draft::draft_definition::{
-        DefinedProcessorOverride, DraftMetadata, DraftProcessorOverride
-    },
-    reference_value::LazyRef,
+    definition::metadata::Metadata, processor::{DefinedProcessorOverride, DraftProcessorOverride}, reference_value::LazyRef
 };
 
 impl DraftProcessorOverride {
@@ -30,7 +27,7 @@ impl DraftProcessorOverride {
 pub struct ProcessorContext {
     pub definition: DefinitionContextDto,
     pub processor: DefinedProcessorOverride,
-    pub metadata: Readonly<DraftMetadata>,
+    pub metadata: Readonly<Metadata>,
 }
 #[derive(Debug)]
 pub(crate) struct EdgeContext {

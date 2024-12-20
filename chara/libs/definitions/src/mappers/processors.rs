@@ -1,11 +1,8 @@
-use engine::{
-    draft::draft_definition::{DraftDefinition, DraftProcessorOverride},
-    reference_value::LazyRef,
-};
+use engine::{draft::draft_definition::DraftDefinition, processor::DraftProcessorOverride, reference_value::LazyRef};
 
 use crate::definition::{ProcessorOverrideDto, ReferenceOrObjectDto};
 
-use super::{arguments::to_draft_arguments, environments::to_draft_environments, REFERENCE_PREFIX};
+use super::{arguments::to_draft_arguments, environments::to_environments, REFERENCE_PREFIX};
 
 pub fn to_node_draft_processor(
     node_processor: &ReferenceOrObjectDto<ProcessorOverrideDto>,
@@ -40,7 +37,7 @@ pub fn to_draft_processor_override(
             .get(reference.trim_start_matches(REFERENCE_PREFIX))
             .map(|processor| DraftProcessorOverride {
                 arguments: to_draft_arguments(&processor_override.arguments, &definition.arguments),
-                environments: to_draft_environments(
+                environments: to_environments(
                     &processor_override.environments,
                     &definition.environments,
                 ),
@@ -55,7 +52,7 @@ pub fn to_draft_processor_override(
     } else {
         DraftProcessorOverride {
             arguments: to_draft_arguments(&processor_override.arguments, &definition.arguments),
-            environments: to_draft_environments(
+            environments: to_environments(
                 &processor_override.environments,
                 &definition.environments,
             ),

@@ -7,8 +7,8 @@ use std::{
 use common::ThreadError;
 use engine::{
     contexts::ProcessorContext,
-    definition::input::DefinitionInput,
-    draft::draft_definition::{DefinedDefinitionInput, DraftDefinition},
+    definition::input::{BaseDefinitionInput, DefinedDefinitionInput},
+    draft::draft_definition::DraftDefinition,
     errors::CharaError,
     processor::{Enrichment, ProcessorResult},
     Definitions as ForeignDefinitions,
@@ -31,12 +31,12 @@ impl Definitions {
         Definitions::read_output::<DefinitionDto>(input).map(|def| def.output)
     }
     pub fn get(path: String) -> Result<DraftDefinition, CharaError> {
-        Definitions::read_output::<DefinitionDto>(&DefinitionInput::File(path.clone())).map(
+        Definitions::read_output::<DefinitionDto>(&BaseDefinitionInput::File(path.clone())).map(
             |read_output| DefinitionDto::map_draft_overwrite_location(read_output.output, path),
         )
     }
     pub fn get_draft(path: String) -> Result<DraftDefinition, CharaError> {
-        Definitions::read_output::<DefinitionDto>(&DefinitionInput::File(path.clone())).map(
+        Definitions::read_output::<DefinitionDto>(&BaseDefinitionInput::File(path.clone())).map(
             |read_output| DefinitionDto::map_draft_overwrite_location(read_output.output, path),
         )
     }
@@ -45,7 +45,7 @@ impl Definitions {
     ) -> Result<ReadOutput<T>, CharaError> {
         let mut location = None;
         match input {
-            DefinitionInput::File(path) => {
+            BaseDefinitionInput::File(path) => {
                 File::open(path).map_err(CharaError::IO).and_then(|file| {
                     let absolute_location = canonicalize(path).map_err(CharaError::IO).and_then(
                         |absolute_location| {
@@ -59,10 +59,10 @@ impl Definitions {
                     serde_json::from_reader(BufReader::new(file)).map_err(CharaError::Json)
                 })
             }
-            DefinitionInput::Text(content) => {
+            BaseDefinitionInput::Text(content) => {
                 serde_json::from_str(&content).map_err(CharaError::Json)
             }
-            DefinitionInput::Processor(processor) => {
+            BaseDefinitionInput::Processor(processor) => {
                 info!("Run definition processor");
                 processor
                     .processor
@@ -76,7 +76,7 @@ impl Definitions {
                     })
                     
             }
-            DefinitionInput::Value(value) => {
+            BaseDefinitionInput::Value(value) => {
                 serde_json::from_value(value.clone()).map_err(CharaError::Json)
             }
         }
@@ -125,7 +125,7 @@ impl ForeignDefinitions for Definitions {
                         path.clone(),
                     ]))
                     .and_then(|_output| {
-                        Definitions::read_output::<ProcessorResultDto>(&DefinitionInput::File(path))
+                        Definitions::read_output::<ProcessorResultDto>(&BaseDefinitionInput::File(path))
                     })
                     .map(|result| ProcessorResult {
                         definition: result

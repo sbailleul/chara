@@ -11,7 +11,7 @@ use crate::{
         ProcessorDto, ProcessorOverrideDto, ReferenceOrObjectDto, TagDto,
     },
     mappers::{
-        arguments::from_draft_arguments, environments::from_draft_environments, tags::from_tags,
+        arguments::from_draft_arguments, environments::from_environments, tags::from_tags,
     },
 };
 
@@ -54,7 +54,7 @@ impl DefinitionDto {
                 let processor = edge.processor.as_ref().map(|processor| {
                     ReferenceOrObjectDto::Object(ProcessorOverrideDto {
                         arguments: from_draft_arguments(processor.arguments.clone()),
-                        environments: from_draft_environments(processor.environments.clone()),
+                        environments: from_environments(processor.environments.clone()),
                         reference: processor
                             .processor
                             .as_ref()
@@ -117,11 +117,11 @@ impl DefinitionDto {
                     ProcessorDto {
                         arguments: from_draft_arguments(processor.arguments.clone()),
                         current_directory: processor.current_directory.clone(),
-                        environments: from_draft_environments(processor.environments.clone()),
+                        environments: from_environments(processor.environments.clone()),
                         program: processor.program.clone(),
                         install: processor.install.as_ref().map(|install| InstallDto {
                             arguments: from_draft_arguments(install.arguments.clone()),
-                            environments: from_draft_environments(install.environments.clone()),
+                            environments: from_environments(install.environments.clone()),
                             current_directory: install.current_directory.clone(),
                             program: install.program.clone(),
                         }),
@@ -154,7 +154,7 @@ impl DefinitionDto {
                             ReferenceOrObjectDto::<ProcessorOverrideDto>::Object(
                                 ProcessorOverrideDto {
                                     arguments: from_draft_arguments(processor.arguments.clone()),
-                                    environments: from_draft_environments(
+                                    environments: from_environments(
                                         processor.environments.clone(),
                                     ),
                                     reference: processor
@@ -181,7 +181,7 @@ impl DefinitionDto {
                                         .as_ref()
                                         .map(DefinitionDto::from_draft_definition),
 
-                                    environments: from_draft_environments(
+                                    environments: from_environments(
                                         edge.environments.clone(),
                                     ),
                                     other: edge.other.clone(),

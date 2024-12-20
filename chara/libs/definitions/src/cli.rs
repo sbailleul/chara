@@ -4,8 +4,7 @@ use common::ThreadError;
 use engine::{
     cli::{Arguments, Environment},
     definition::install::Install,
-    draft::draft_definition::{DefinedProcessorOverride, DraftArguments, DraftEnvironments, DraftProcessor},
-    errors::CharaError,
+    errors::CharaError, processor::{DefinedProcessorOverride, Processor},
 };
 use log::info;
 pub trait Inputs {
@@ -86,7 +85,7 @@ pub trait Cli: Inputs {
     }
 }
 
-impl Inputs for Install<DraftArguments, DraftEnvironments> {
+impl Inputs for Install {
     fn arguments(&self) -> Vec<Arguments> {
         self.arguments
         .clone()
@@ -104,7 +103,7 @@ impl Inputs for Install<DraftArguments, DraftEnvironments> {
         .collect()
     }
 }
-impl Cli for Install<DraftArguments, DraftEnvironments> {
+impl Cli for Install {
     fn program(&self) -> Result<String, CharaError> {
         Ok(self.program.clone())
     }
@@ -113,7 +112,7 @@ impl Cli for Install<DraftArguments, DraftEnvironments> {
     }
 }
 
-impl Inputs for DraftProcessor {
+impl Inputs for Processor {
     fn arguments(&self) -> Vec<Arguments> {
         self.arguments
             .clone()
@@ -131,7 +130,7 @@ impl Inputs for DraftProcessor {
             .collect()
     }
 }
-impl Cli for DraftProcessor {
+impl Cli for Processor {
     fn program(&self) -> Result<String, CharaError> {
         Ok(self.program.clone())
     }

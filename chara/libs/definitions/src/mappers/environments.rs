@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use common::thread::Readonly;
 use engine::{
-    draft::draft_definition::DraftEnvironments,
-    reference_value::{LazyRefOrValue, ReferencedValue},
+    cli::DraftEnvironments, reference_value::{LazyRefOrValue, ReferencedValue}
 };
 
 use crate::definition::EnvironmentDto;
@@ -11,7 +10,7 @@ use crate::definition::EnvironmentDto;
 use super::REFERENCE_PREFIX;
 
 
-pub fn from_draft_environments(environments: Vec<DraftEnvironments>) -> Vec<EnvironmentDto> {
+pub fn from_environments(environments: Vec<DraftEnvironments>) -> Vec<EnvironmentDto> {
     environments
         .into_iter()
         .map(|env| match env {
@@ -22,7 +21,7 @@ pub fn from_draft_environments(environments: Vec<DraftEnvironments>) -> Vec<Envi
         .collect()
 }
 
-pub fn to_draft_environments(
+pub fn to_environments(
     dto_environments: &Vec<EnvironmentDto>,
     environments: &HashMap<String, Readonly<HashMap<String, String>>>,
 ) -> Vec<DraftEnvironments> {

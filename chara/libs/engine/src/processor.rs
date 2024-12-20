@@ -1,10 +1,8 @@
-
-use common::merge::Merge;
+use common::{merge::Merge, thread::Readonly};
 use serde_json::{Map, Value};
 
 use crate::{
-    definition::install::Install,
-    draft::draft_definition::DraftDefinition,
+    cli::{DraftArguments, DraftEnvironments}, definition::install::Install, draft::draft_definition::DraftDefinition, reference_value::{LazyRef, ReferencedValue}
 };
 
 #[derive(Debug)]
@@ -19,16 +17,14 @@ pub struct ProcessorResult {
 }
 
 #[derive(Debug, Clone)]
-pub struct Processor<TArguments, TEnvironment> {
-    pub arguments: Vec<TArguments>,
+pub struct Processor {
+    pub arguments: Vec<DraftArguments>,
     pub program: String,
-    pub install: Option<Install<TArguments, TEnvironment>>,
-    pub environments: Vec<TEnvironment>,
+    pub install: Option<Install>,
+    pub environments: Vec<DraftEnvironments>,
     pub current_directory: Option<String>,
 }
-impl<TArguments: Merge + Clone, TEnvironment: Merge + Clone> Merge
-    for Processor<TArguments, TEnvironment>
-{
+impl Merge for Processor {
     fn merge(&mut self, other: &Self) {
         self.arguments.merge(&other.arguments);
         self.program = other.program.clone();
@@ -42,7 +38,6 @@ pub struct ProcessorOverride<TArguments, TEnvironment, TProcessor> {
     pub environments: Vec<TEnvironment>,
     pub processor: TProcessor,
 }
-
 
 impl<TArguments: Merge + Clone, TEnvironment: Merge + Clone, TProcessor: Merge + Clone> Merge
     for ProcessorOverride<TArguments, TEnvironment, TProcessor>
@@ -71,3 +66,8 @@ impl<TArguments: Clone, TEnvironment: Clone, TProcessor: Clone>
         processor
     }
 }
+
+pub type DraftProcessorOverride =
+    ProcessorOverride<DraftArguments, DraftEnvironments, Option<LazyRef<Processor>>>;
+pub type DefinedProcessorOverride =
+    ProcessorOverride<DraftArguments, DraftEnvironments, ReferencedValue<Readonly<Processor>>>;

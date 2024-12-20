@@ -4,4 +4,3 @@ pub mod edge;
 pub mod metadata;
 pub mod install;
 pub mod tag;
-pub mod definition;

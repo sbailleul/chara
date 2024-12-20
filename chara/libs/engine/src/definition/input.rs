@@ -3,17 +3,18 @@ use std::borrow::BorrowMut;
 use common::merge::Merge;
 use serde_json::Value;
 
+use crate::processor::{DefinedProcessorOverride, DraftProcessorOverride};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum DefinitionInput<TProcessor> {
+pub enum BaseDefinitionInput<TProcessor> {
     File(String),
     Text(String),
     Value(Value),
     Processor(TProcessor),
 }
-impl<TProcessor: Merge + Clone> Merge for DefinitionInput<TProcessor> {
-    fn merge(&mut self, other: &DefinitionInput<TProcessor>) {
-        if let (DefinitionInput::Value(value), DefinitionInput::Value(other)) =
+impl<TProcessor: Merge + Clone> Merge for BaseDefinitionInput<TProcessor> {
+    fn merge(&mut self, other: &BaseDefinitionInput<TProcessor>) {
+        if let (BaseDefinitionInput::Value(value), BaseDefinitionInput::Value(other)) =
             (self.borrow_mut(), &other)
         {
             value.merge(other);
@@ -22,3 +23,18 @@ impl<TProcessor: Merge + Clone> Merge for DefinitionInput<TProcessor> {
         }
     }
 }
+
+pub type DraftDefinitionInput = BaseDefinitionInput<DraftProcessorOverride>;
+impl DraftDefinitionInput {
+    pub fn to_defined(&self) -> Option<DefinedDefinitionInput> {
+        match self {
+            BaseDefinitionInput::File(file) => Some(DefinedDefinitionInput::File(file.clone())),
+            BaseDefinitionInput::Text(txt) => Some(DefinedDefinitionInput::Text(txt.clone())),
+            BaseDefinitionInput::Value(value) => Some(DefinedDefinitionInput::Value(value.clone())),
+            BaseDefinitionInput::Processor(processor) => processor
+                .map()
+                .map(|processor| DefinedDefinitionInput::Processor(processor)),
+        }
+    }
+}
+pub type DefinedDefinitionInput = BaseDefinitionInput<DefinedProcessorOverride>;

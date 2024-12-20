@@ -2,15 +2,10 @@ use std::{collections::HashMap, path, sync::Arc};
 
 use engine::{
     definition::{
-        foreign_definition::ForeignDefinition,
-        input::DefinitionInput,
-        install::Install,
-        tag::{RefTag, Tag},
+        edge::{Edge, EdgeOverride}, foreign_definition::ForeignDefinition, input::{BaseDefinitionInput, DraftDefinitionInput}, install::Install, metadata::Metadata, tag::{RefTag, Tag}
     },
-    draft::draft_definition::{
-        DraftArguments, DraftDefinition, DraftDefinitionInput, DraftEdge, DraftEdgeOverride,
-        DraftEnvironments, DraftMetadata, DraftProcessor, DraftProcessorOverride,
-    },
+    draft::draft_definition::DraftDefinition,
+    processor::{DraftProcessorOverride, Processor},
     reference_value::{LazyRef, LazyRefOrValue, ReferencedValue},
 };
 
@@ -22,7 +17,7 @@ use crate::{
     definition::{DefinitionDto, ForeignDefinitionDto, ReferenceOrObjectDto},
     mappers::{
         arguments::to_draft_arguments,
-        environments::to_draft_environments,
+        environments::to_environments,
         processors::{to_draft_processor_override, to_node_draft_processor},
         tags::to_tags,
         REFERENCE_PREFIX,
@@ -99,7 +94,7 @@ impl DefinitionDto {
         };
         all_tags
     }
-    
+
     fn set_draft_processors(&self, definition: &mut DraftDefinition) {
         definition.processors = self
             .processors
@@ -107,25 +102,22 @@ impl DefinitionDto {
             .map(|(key, processor)| {
                 (
                     key.clone(),
-                    readonly(DraftProcessor {
+                    readonly(Processor {
                         arguments: to_draft_arguments(&processor.arguments, &definition.arguments),
                         program: processor.program.clone(),
-                        install: processor.install.as_ref().map(|install| Install::<
-                            DraftArguments,
-                            DraftEnvironments,
-                        > {
+                        install: processor.install.as_ref().map(|install| Install {
                             arguments: to_draft_arguments(
                                 &install.arguments,
                                 &definition.arguments,
                             ),
-                            environments: to_draft_environments(
+                            environments: to_environments(
                                 &install.environments,
                                 &definition.environments,
                             ),
                             program: install.program.clone(),
                             current_directory: install.current_directory.clone(),
                         }),
-                        environments: to_draft_environments(
+                        environments: to_environments(
                             &processor.environments,
                             &definition.environments,
                         ),
@@ -164,15 +156,15 @@ impl DefinitionDto {
                                 let definition_input = match foreign_definition {
                                     ForeignDefinitionDto::String(text_definition) => {
                                         if path::Path::new(text_definition).exists() {
-                                            Some(DefinitionInput::File(text_definition.clone()))
+                                            Some(BaseDefinitionInput::File(text_definition.clone()))
                                         } else if let Ok(content) =
                                             serde_json::from_str(text_definition)
                                         {
-                                            Some(DefinitionInput::Value(content))
+                                            Some(BaseDefinitionInput::Value(content))
                                         } else if let Some(processor) = definition.processors.get(
                                             text_definition.trim_start_matches(REFERENCE_PREFIX),
                                         ) {
-                                            Some(DefinitionInput::Processor(
+                                            Some(BaseDefinitionInput::Processor(
                                                 DraftProcessorOverride::processor(&Some(
                                                     LazyRef::new_referenced_value(
                                                         text_definition.clone(),
@@ -181,7 +173,7 @@ impl DefinitionDto {
                                                 )),
                                             ))
                                         } else {
-                                            Some(DefinitionInput::Processor(
+                                            Some(BaseDefinitionInput::Processor(
                                                 DraftProcessorOverride::processor(&Some(
                                                     LazyRef::Ref(text_definition.clone()),
                                                 )),
@@ -212,7 +204,7 @@ impl DefinitionDto {
                     .flatten();
                 (
                     key.clone(),
-                    readonly(DraftEdge {
+                    readonly(Edge {
                         definition: foreign_definition,
                         processor: edge
                             .processor
@@ -231,7 +223,7 @@ impl DefinitionDto {
             .map(|(key, metadata)| {
                 (
                     key.clone(),
-                    readonly(DraftMetadata {
+                    readonly(Metadata {
                         edges: metadata
                             .edges
                             .iter()
@@ -242,14 +234,14 @@ impl DefinitionDto {
                                         .edges
                                         .get(reference.trim_start_matches(REFERENCE_PREFIX))
                                         .map(|edge| {
-                                            DraftEdgeOverride::edge(
+                                            EdgeOverride::edge(
                                                 LazyRefOrValue::ReferencedValue(ReferencedValue {
                                                     r#ref: reference.clone(),
                                                     value: edge.clone(),
                                                 }),
                                             )
                                         })
-                                        .unwrap_or(DraftEdgeOverride::edge(LazyRefOrValue::Ref(
+                                        .unwrap_or(EdgeOverride::edge(LazyRefOrValue::Ref(
                                             reference.clone(),
                                         ))),
                                 ),
@@ -262,12 +254,12 @@ impl DefinitionDto {
                                                 .r#ref
                                                 .trim_start_matches(REFERENCE_PREFIX),
                                         )
-                                        .map(|edge| DraftEdgeOverride {
+                                        .map(|edge| EdgeOverride {
                                             arguments: to_draft_arguments(
                                                 &metadata_edge.arguments,
                                                 &definition.arguments,
                                             ),
-                                            environments: to_draft_environments(
+                                            environments: to_environments(
                                                 &metadata_edge.environments,
                                                 &definition.environments,
                                             ),
@@ -281,12 +273,12 @@ impl DefinitionDto {
                                                 .clone()
                                                 .map(Self::map_draft),
                                         })
-                                        .unwrap_or(DraftEdgeOverride {
+                                        .unwrap_or(EdgeOverride {
                                             arguments: to_draft_arguments(
                                                 &metadata_edge.arguments,
                                                 &definition.arguments,
                                             ),
-                                            environments: to_draft_environments(
+                                            environments: to_environments(
                                                 &metadata_edge.environments,
                                                 &definition.environments,
                                             ),

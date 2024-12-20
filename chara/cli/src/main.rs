@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use definitions::definitions::Definitions as DefinitionsImpl;
 use engine::Definitions;
-use engine::{definition::input::DefinitionInput, run};
+use engine::{definition::input::BaseDefinitionInput, run};
 use graph::create_graph;
 fn main() {
     colog::init();
@@ -19,7 +19,7 @@ fn main() {
 }
 
 fn graph() {
-    create_graph(&DefinitionInput::File(
+    create_graph(&BaseDefinitionInput::File(
         "chara_results/536d8481-8203-46df-b008-554ce25329ff.json".to_string(),
     ))
     .unwrap();

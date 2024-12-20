@@ -10,7 +10,8 @@ use common::{
 };
 use contexts::ProcessorContext;
 
-use draft::draft_definition::{DefinedDefinitionInput, DraftDefinition, DraftForeignDefinition};
+use definition::{foreign_definition::ForeignDefinition, input::DefinedDefinitionInput};
+use draft::draft_definition::{ DraftDefinition};
 use errors::CharaError;
 use log::error;
 use processor::ProcessorResult;
@@ -114,7 +115,7 @@ fn handle_results(
 fn get_definitions(
     definition: &DraftDefinition,
     definitions: &Arc<dyn Definitions>,
-) -> Vec<(Readonly<DraftForeignDefinition>, Option<DraftDefinition>)> {
+) -> Vec<(Readonly<ForeignDefinition>, Option<DraftDefinition>)> {
     definition
         .foreign_definitions
         .iter()

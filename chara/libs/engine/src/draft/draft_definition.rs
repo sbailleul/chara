@@ -4,65 +4,23 @@ use common::{
     merge::{Merge, Overwrite},
     thread::Readonly,
 };
-use serde_json::Map;
 
 use crate::{
     contexts::{
         ContextDto, DefinitionContextDto, EdgeContext, ProcessorContext, WritePermissionsDto,
     },
     definition::{
-        edge::{Edge, EdgeOverride},
+        edge::Edge,
         foreign_definition::ForeignDefinition,
-        input::DefinitionInput,
         metadata::Metadata,
         tag::RefTag,
     },
-    processor::{Processor, ProcessorOverride},
-    reference_value::{LazyRef, LazyRefOrValue, ReferencedValue},
+    processor::Processor,
+    reference_value::LazyRefOrValue,
 };
-pub type DraftArguments = LazyRefOrValue<Vec<String>>;
 
-pub type DraftEnvironments = LazyRefOrValue<HashMap<String, String>>;
-pub type DraftDefinitionInput = DefinitionInput<DraftProcessorOverride>;
 
-impl DraftDefinitionInput {
-    pub fn to_defined(&self) -> Option<DefinedDefinitionInput> {
-        match self {
-            DefinitionInput::File(file) => Some(DefinedDefinitionInput::File(file.clone())),
-            DefinitionInput::Text(txt) => Some(DefinedDefinitionInput::Text(txt.clone())),
-            DefinitionInput::Value(value) => Some(DefinedDefinitionInput::Value(value.clone())),
-            DefinitionInput::Processor(processor) => processor
-                .map()
-                .map(|processor| DefinedDefinitionInput::Processor(processor)),
-        }
-    }
-}
-pub type DefinedDefinitionInput = DefinitionInput<DefinedProcessorOverride>;
-pub type DraftForeignDefinition = ForeignDefinition<DraftDefinitionInput>;
 
-pub type DraftProcessor = Processor<DraftArguments, DraftEnvironments>;
-pub type DraftProcessorOverride =
-    ProcessorOverride<DraftArguments, DraftEnvironments, Option<LazyRef<DraftProcessor>>>;
-pub type DefinedProcessorOverride =
-    ProcessorOverride<DraftArguments, DraftEnvironments, ReferencedValue<Readonly<DraftProcessor>>>;
-pub type DraftEdge = Edge<DraftProcessorOverride, DraftForeignDefinition>;
-
-pub type DraftEdgeOverride =
-    EdgeOverride<DraftArguments, DraftEnvironments, LazyRefOrValue<DraftEdge>>;
-impl DraftEdgeOverride {
-    pub fn edge(edge: LazyRefOrValue<DraftEdge>) -> Self {
-        Self {
-            arguments: vec![],
-            definition: None,
-            edge,
-            environments: vec![],
-            other: Map::new(),
-        }
-    }
-}
-
-pub type DraftMetadata =
-    Metadata<DraftEdgeOverride, DraftProcessorOverride, LazyRefOrValue<RefTag>>;
 
 #[derive(Debug, Clone)]
 pub struct DraftDefinition {
@@ -70,13 +28,13 @@ pub struct DraftDefinition {
     pub name: String,
     pub id: String,
     pub location: Option<String>,
-    pub metadata: HashMap<String, Readonly<DraftMetadata>>,
-    pub edges: HashMap<String, Readonly<DraftEdge>>,
+    pub metadata: HashMap<String, Readonly<Metadata>>,
+    pub edges: HashMap<String, Readonly<Edge>>,
     pub tags: HashMap<String, Readonly<RefTag>>,
-    pub processors: HashMap<String, Readonly<DraftProcessor>>,
+    pub processors: HashMap<String, Readonly<Processor>>,
     pub arguments: HashMap<String, Readonly<Vec<String>>>,
     pub environments: HashMap<String, Readonly<HashMap<String, String>>>,
-    pub foreign_definitions: HashMap<String, Readonly<DraftForeignDefinition>>,
+    pub foreign_definitions: HashMap<String, Readonly<ForeignDefinition>>,
 }
 
 impl Merge for DraftDefinition {
