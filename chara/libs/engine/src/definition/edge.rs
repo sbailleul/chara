@@ -1,7 +1,8 @@
 use common::{merge::Merge, thread::Readonly};
 use serde_json::{Map, Value};
 
-use crate::clean::clean_definition::CleanDefinition;
+use crate::draft::draft_definition::DraftDefinition;
+
 
 
 #[derive(Debug, Clone)]
@@ -26,7 +27,7 @@ pub struct EdgeOverride<TArguments, TEnvironment, TEdge> {
     pub environments: Vec<TEnvironment>,
     pub edge: TEdge,
     pub other: Map<String, Value>,
-    pub definition: Option<CleanDefinition>,
+    pub definition: Option<DraftDefinition>,
 }
 
 

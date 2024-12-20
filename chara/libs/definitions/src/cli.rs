@@ -2,8 +2,9 @@ use std::{collections::HashMap, fs::canonicalize, process::Command};
 
 use common::ThreadError;
 use engine::{
-    clean::clean_definition::{CleanInstall, CleanProcessor, CleanProcessorOverride},
     cli::{Arguments, Environment},
+    definition::install::Install,
+    draft::draft_definition::{DefinedProcessorOverride, DraftArguments, DraftEnvironments, DraftProcessor},
     errors::CharaError,
 };
 use log::info;
@@ -85,15 +86,25 @@ pub trait Cli: Inputs {
     }
 }
 
-impl Inputs for CleanInstall {
+impl Inputs for Install<DraftArguments, DraftEnvironments> {
     fn arguments(&self) -> Vec<Arguments> {
-        self.arguments.clone()
+        self.arguments
+        .clone()
+        .iter()
+        .map(|arg| arg.to_ref_or_value())
+        .flatten()
+        .collect()
     }
     fn environments(&self) -> Vec<Environment> {
-        self.environments.clone()
+        self.environments
+        .clone()
+        .iter()
+        .map(|env| env.to_ref_or_value())
+        .flatten()
+        .collect()
     }
 }
-impl Cli for CleanInstall {
+impl Cli for Install<DraftArguments, DraftEnvironments> {
     fn program(&self) -> Result<String, CharaError> {
         Ok(self.program.clone())
     }
@@ -102,15 +113,25 @@ impl Cli for CleanInstall {
     }
 }
 
-impl Inputs for CleanProcessor {
+impl Inputs for DraftProcessor {
     fn arguments(&self) -> Vec<Arguments> {
-        self.arguments.clone()
+        self.arguments
+            .clone()
+            .iter()
+            .map(|arg| arg.to_ref_or_value())
+            .flatten()
+            .collect()
     }
     fn environments(&self) -> Vec<Environment> {
-        self.environments.clone()
+        self.environments
+            .clone()
+            .iter()
+            .map(|env| env.to_ref_or_value())
+            .flatten()
+            .collect()
     }
 }
-impl Cli for CleanProcessor {
+impl Cli for DraftProcessor {
     fn program(&self) -> Result<String, CharaError> {
         Ok(self.program.clone())
     }
@@ -120,32 +141,38 @@ impl Cli for CleanProcessor {
     }
 }
 
-impl Inputs for CleanProcessorOverride {
+impl Inputs for DefinedProcessorOverride {
     fn arguments(&self) -> Vec<Arguments> {
         self.processor
             .value
             .read()
             .map_or(vec![], |processor| processor.arguments())
             .into_iter()
-            .chain(self.arguments.clone().into_iter())
+            .chain(
+                self.arguments
+                    .iter()
+                    .map(|arg| arg.to_ref_or_value())
+                    .flatten(),
+            )
             .collect()
     }
 
     fn environments(&self) -> Vec<Environment> {
-        self.environments
-            .clone()
+        self.processor
+            .value
+            .read()
+            .map_or(vec![], |processor| processor.environments())
             .into_iter()
             .chain(
-                self.processor
-                    .value
-                    .read()
-                    .map_or(vec![], |processor| processor.environments())
-                    .into_iter(),
+                self.environments
+                    .iter()
+                    .map(|arg| arg.to_ref_or_value())
+                    .flatten(),
             )
             .collect()
     }
 }
-impl Cli for CleanProcessorOverride {
+impl Cli for DefinedProcessorOverride {
     fn program(&self) -> Result<String, CharaError> {
         self.processor
             .value

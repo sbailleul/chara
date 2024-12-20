@@ -4,9 +4,9 @@ use common::{merge::Merge, thread::Readonly};
 use serde_json::{Map, Value};
 
 use crate::{
-    clean::clean_definition::{CleanInstall, CleanProcessor},
     cli::{Arguments, Environment},
-    draft::draft_definition::DraftDefinition,
+    definition::install::Install,
+    draft::draft_definition::{DraftArguments, DraftDefinition, DraftEnvironments, DraftProcessor},
     reference_value::ReferencedValue,
 };
 
@@ -22,15 +22,15 @@ pub struct ProcessorResult {
 }
 
 #[derive(Debug, Clone)]
-pub struct Processor<TArguments, TInstall, TEnvironment> {
+pub struct Processor<TArguments, TEnvironment> {
     pub arguments: Vec<TArguments>,
     pub program: String,
-    pub install: Option<TInstall>,
+    pub install: Option<Install<TArguments, TEnvironment>>,
     pub environments: Vec<TEnvironment>,
     pub current_directory: Option<String>,
 }
-impl<TArguments: Merge + Clone, TInstall: Merge + Clone, TEnvironment: Merge + Clone> Merge
-    for Processor<TArguments, TInstall, TEnvironment>
+impl<TArguments: Merge + Clone, TEnvironment: Merge + Clone> Merge
+    for Processor<TArguments, TEnvironment>
 {
     fn merge(&mut self, other: &Self) {
         self.arguments.merge(&other.arguments);
@@ -39,12 +39,14 @@ impl<TArguments: Merge + Clone, TInstall: Merge + Clone, TEnvironment: Merge + C
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProcessorOverride<TArguments, TEnvironment, TProcessor> {
     pub arguments: Vec<TArguments>,
     pub environments: Vec<TEnvironment>,
     pub processor: TProcessor,
 }
+
+
 impl<TArguments: Merge + Clone, TEnvironment: Merge + Clone, TProcessor: Merge + Clone> Merge
     for ProcessorOverride<TArguments, TEnvironment, TProcessor>
 {

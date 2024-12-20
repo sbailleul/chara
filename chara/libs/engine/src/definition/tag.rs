@@ -6,8 +6,9 @@ use common::{
 };
 use serde_json::Value;
 
-use crate::clean::clean_definition::RefTag;
+use crate::reference_value::ReferencedValue;
 
+pub type RefTag = ReferencedValue<Tag>;
 #[derive(Debug, Clone)]
 pub struct Tag {
     pub label: Option<String>,

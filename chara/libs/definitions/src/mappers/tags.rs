@@ -5,7 +5,7 @@ use common::{
     ThreadError,
 };
 use engine::{
-    clean::clean_definition::RefTag, definition::tag::Tag, errors::CharaError
+     definition::tag::{RefTag, Tag}, errors::CharaError
 };
 
 use crate::definition::TagDto;

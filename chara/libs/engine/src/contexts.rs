@@ -2,19 +2,42 @@ use common::thread::Readonly;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-use crate::clean::clean_definition::{CleanMetadata, CleanProcessorOverride};
+use crate::{
+    draft::draft_definition::{
+        DefinedProcessorOverride, DraftArguments, DraftEnvironments, DraftMetadata, DraftProcessor, DraftProcessorOverride
+    },
+    processor::ProcessorOverride,
+    reference_value::{LazyRef, ReferencedValue},
+};
 
+impl DraftProcessorOverride {
+    pub fn map(&self) -> Option<DefinedProcessorOverride> {
+        if let Some(inner_processor) = self.processor.as_ref() {
+            if let LazyRef::ReferencedValue(inner_processor) = inner_processor {
+                Some(DefinedProcessorOverride {
+                    arguments: self.arguments.clone(),
+                    environments: self.environments.clone(),
+                    processor: inner_processor.clone(),
+                })
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+}
 #[derive(Debug)]
 pub struct ProcessorContext {
     pub definition: DefinitionContextDto,
-    pub processor: CleanProcessorOverride,
-    pub metadata: Readonly<CleanMetadata>,
+    pub processor: DefinedProcessorOverride,
+    pub metadata: Readonly<DraftMetadata>,
 }
 #[derive(Debug)]
 pub(crate) struct EdgeContext {
     pub key: String,
     pub value: Map<String, Value>,
-    pub processor: CleanProcessorOverride,
+    pub processor: DefinedProcessorOverride,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -9,26 +9,6 @@ use engine::{
 
 use super::REFERENCE_PREFIX;
 
-pub fn to_arguments(
-    dto_arguments: &Vec<String>,
-    arguments: &HashMap<String, Readonly<Vec<String>>>,
-) -> Vec<Arguments> {
-    to_draft_arguments(dto_arguments, arguments)
-        .into_iter()
-        .map(|arg| match arg {
-            LazyRefOrValue::Ref(_) => None,
-            LazyRefOrValue::ReferencedValue(ref_value) => {
-                Some(Arguments::ReferencedValue(ReferencedValue {
-                    r#ref: ref_value.r#ref,
-                    value: ref_value.value,
-                }))
-            }
-            LazyRefOrValue::Value(value) => Some(Arguments::Value(value)),
-        })
-        .flatten()
-        .collect()
-}
-
 pub fn to_draft_arguments(
     dto_arguments: &Vec<String>,
     arguments: &HashMap<String, Readonly<Vec<String>>>,
@@ -52,18 +32,6 @@ pub fn to_draft_arguments(
         .collect()
 }
 
-pub fn from_arguments(arguments: Vec<Arguments>) -> Vec<String> {
-    arguments
-        .into_iter()
-        .flat_map(|arg| match arg {
-            Arguments::Value(arg) => arg,
-            Arguments::ReferencedValue(ReferencedValue { r#ref: _, value })  => value
-                .read()
-                .map(|lock| (*lock).clone())
-                .unwrap_or(Vec::<String>::new()),
-        })
-        .collect()
-}
 
 pub fn from_draft_arguments(arguments: Vec<DraftArguments>) -> Vec<String> {
     arguments

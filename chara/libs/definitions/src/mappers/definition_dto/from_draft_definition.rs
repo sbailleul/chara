@@ -179,7 +179,7 @@ impl DefinitionDto {
                                     definition: edge
                                         .definition
                                         .as_ref()
-                                        .map(DefinitionDto::from_definition),
+                                        .map(DefinitionDto::from_draft_definition),
 
                                     environments: from_draft_environments(
                                         edge.environments.clone(),

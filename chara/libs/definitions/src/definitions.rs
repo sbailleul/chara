@@ -6,10 +6,9 @@ use std::{
 
 use common::ThreadError;
 use engine::{
-    clean::clean_definition::{CleanDefinition, CleanDefinitionInput},
     contexts::ProcessorContext,
     definition::input::DefinitionInput,
-    draft::draft_definition::DraftDefinition,
+    draft::draft_definition::{DefinedDefinitionInput, DraftDefinition, DraftDefinitionInput},
     errors::CharaError,
     processor::{Enrichment, ProcessorResult},
     Definitions as ForeignDefinitions,
@@ -28,12 +27,13 @@ pub struct ReadOutput<T> {
     location: Option<String>,
 }
 impl Definitions {
-    pub fn read(input: &CleanDefinitionInput) -> Result<DefinitionDto, CharaError> {
+    pub fn read(input: &DefinedDefinitionInput) -> Result<DefinitionDto, CharaError> {
         Definitions::read_output::<DefinitionDto>(input).map(|def| def.output)
     }
-    pub fn get(path: String) -> Result<CleanDefinition, CharaError> {
-        Definitions::read_output::<DefinitionDto>(&DefinitionInput::File(path.clone()))
-            .map(|read_output| DefinitionDto::map_overwrite_location(read_output.output, path))
+    pub fn get(path: String) -> Result<DraftDefinition, CharaError> {
+        Definitions::read_output::<DefinitionDto>(&DefinitionInput::File(path.clone())).map(
+            |read_output| DefinitionDto::map_draft_overwrite_location(read_output.output, path),
+        )
     }
     pub fn get_draft(path: String) -> Result<DraftDefinition, CharaError> {
         Definitions::read_output::<DefinitionDto>(&DefinitionInput::File(path.clone())).map(
@@ -41,7 +41,7 @@ impl Definitions {
         )
     }
     fn read_output<T: for<'a> Deserialize<'a>>(
-        input: &CleanDefinitionInput,
+        input: &DefinedDefinitionInput,
     ) -> Result<ReadOutput<T>, CharaError> {
         let mut location = None;
         match input {
@@ -65,8 +65,16 @@ impl Definitions {
             DefinitionInput::Processor(processor) => {
                 info!("Run definition processor");
                 processor
-                    .output_stdout(None)
-                    .and_then(|stdout| serde_json::from_str(&stdout).map_err(CharaError::Json))
+                    .processor
+                    .value
+                    .read()
+                    .map_err(|_| CharaError::Thread(ThreadError::Poison))
+                    .and_then(|processor| {
+                        processor.output_stdout(None).and_then(|stdout| {
+                            serde_json::from_str(&stdout).map_err(CharaError::Json)
+                        })
+                    })
+                    
             }
             DefinitionInput::Value(value) => {
                 serde_json::from_value(value.clone()).map_err(CharaError::Json)
@@ -76,18 +84,18 @@ impl Definitions {
     }
 }
 impl ForeignDefinitions for Definitions {
-    fn get(&self, input: &CleanDefinitionInput) -> Result<DraftDefinition, CharaError> {
+    fn get(&self, input: &DefinedDefinitionInput) -> Result<DraftDefinition, CharaError> {
         Definitions::read_output::<DefinitionDto>(input).map(|read_output| {
             DefinitionDto::map_draft_with_location(read_output.output, read_output.location)
         })
     }
 
-    fn save(&self, definition: &CleanDefinition) -> Result<(), CharaError> {
+    fn save(&self, definition: &DraftDefinition) -> Result<(), CharaError> {
         let path = create_path("chara_results", None)?;
         info!("Save result at {path}");
         serde_json::to_writer(
             File::create(path).map_err(CharaError::IO)?,
-            &DefinitionDto::from_definition(definition),
+            &DefinitionDto::from_draft_definition(definition),
         )
         .map_err(CharaError::Json)?;
         Ok(())

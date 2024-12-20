@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, fmt::Debug, hash::Hash};
+use std::{borrow::BorrowMut, fmt::Debug, hash::Hash, sync::Arc};
 
 use common::{
     merge::Merge,
@@ -16,6 +16,15 @@ impl<T: Merge + Clone> Merge for ReferencedValue<T> {
         self.value.merge(&other.value);
     }
 }
+impl <T>PartialEq for ReferencedValue<Readonly<T>>{
+    fn eq(&self, other: &Self) -> bool {
+        self.r#ref == other.r#ref && Arc::ptr_eq(&self.value, &other.value)
+    }
+}
+impl <T>Eq for ReferencedValue<Readonly<T>>{
+
+} 
+
 #[derive(Debug, Clone)]
 pub enum RefOrValue<T> {
     ReferencedValue(ReferencedValue<Readonly<T>>),
@@ -61,6 +70,9 @@ impl<T: PartialEq> PartialEq for RefOrValue<T> {
 }
 impl<T: PartialEq> Eq for RefOrValue<T> {}
 
+
+
+
 impl<T: Default + Clone> RefOrValue<T> {
     pub fn unwrap(&self) -> T {
         match self {
@@ -90,6 +102,45 @@ pub enum LazyRefOrValue<T> {
     Ref(String),
     ReferencedValue(ReferencedValue<Readonly<T>>),
     Value(T),
+}
+impl<T: PartialEq> PartialEq for LazyRefOrValue<T> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Value(l0), Self::Value(r0)) => l0 == r0,
+            (Self::Ref(l0), Self::Ref(r0)) => l0 == r0,
+            (
+                Self::ReferencedValue(ReferencedValue { r#ref: ref0, .. }),
+                Self::ReferencedValue(ReferencedValue { r#ref: ref1, .. }),
+            ) => ref0.eq(ref1),
+            _ => false,
+        }
+    }
+}
+impl<T: PartialEq> Eq for LazyRefOrValue<T> {}
+
+
+impl<T: Default> Into<RefOrValue<T>> for LazyRefOrValue<T> {
+    fn into(self) -> RefOrValue<T> {
+        match self {
+            LazyRefOrValue::Ref(_) => RefOrValue::Value(T::default()),
+            LazyRefOrValue::ReferencedValue(referenced_value) => {
+                RefOrValue::ReferencedValue(referenced_value)
+            }
+            LazyRefOrValue::Value(value) => RefOrValue::Value(value),
+        }
+    }
+}
+
+impl<T: Clone> LazyRefOrValue<T> {
+    pub fn value(&self) -> Option<T> {
+        match self {
+            LazyRefOrValue::Ref(_) => None,
+            LazyRefOrValue::ReferencedValue(referenced_value) => {
+                referenced_value.value.read().ok().map(|v| v.clone())
+            }
+            LazyRefOrValue::Value(value) => Some(value.clone()),
+        }
+    }
 }
 impl<T: Merge + Clone> Merge for LazyRefOrValue<T> {
     fn merge(&mut self, other: &Self) {
@@ -126,7 +177,7 @@ impl<T: Merge + Clone> Merge for LazyRefOrValue<T> {
         }
     }
 }
-impl<T> LazyRefOrValue<T> {
+impl<T: Clone> LazyRefOrValue<T> {
     pub fn reference(&self) -> Option<String> {
         match self {
             LazyRefOrValue::Ref(reference) => Some(reference.clone()),
@@ -140,6 +191,14 @@ impl<T> LazyRefOrValue<T> {
             value,
         })
     }
+
+    pub fn to_ref_or_value(&self) -> Option<RefOrValue<T>>{
+        match self {
+            LazyRefOrValue::Ref(_) => None,
+            LazyRefOrValue::ReferencedValue(referenced_value) =>Some(RefOrValue::ReferencedValue(referenced_value.clone())),
+            LazyRefOrValue::Value(value) =>Some(RefOrValue::Value(value.clone())),
+        }
+    }
 }
 #[derive(Debug, Clone)]
 pub enum LazyRef<T> {
@@ -147,12 +206,32 @@ pub enum LazyRef<T> {
     ReferencedValue(ReferencedValue<Readonly<T>>),
 }
 
+impl <T> PartialEq for LazyRef<T>{
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Ref(l0), Self::Ref(r0)) => l0 == r0,
+            (
+                Self::ReferencedValue(ReferencedValue { r#ref: ref0, .. }),
+                Self::ReferencedValue(ReferencedValue { r#ref: ref1, .. }),
+            ) => ref0.eq(ref1),
+            _ => false,
+        }
+    }
+}
+
 impl<T> LazyRef<T> {
-    pub fn referenced_value(reference: String, value: Readonly<T>) -> LazyRef<T> {
+    pub fn new_referenced_value(reference: String, value: Readonly<T>) -> LazyRef<T> {
         Self::ReferencedValue(ReferencedValue {
             r#ref: reference,
             value,
         })
+    }
+    pub fn referenced_value(&self) -> Option<ReferencedValue<Readonly<T>>> {
+        if let LazyRef::ReferencedValue(referenced_value) = self {
+            Some(referenced_value.clone())
+        } else {
+            None
+        }
     }
     pub fn reference(&self) -> String {
         match self {

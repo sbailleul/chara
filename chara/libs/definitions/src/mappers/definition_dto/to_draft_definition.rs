@@ -1,15 +1,21 @@
-use std::{collections::HashMap, path};
+use std::{collections::HashMap, path, sync::Arc};
 
 use engine::{
-    definition::{foreign_definition::ForeignDefinition, input::DefinitionInput},
+    definition::{
+        foreign_definition::ForeignDefinition,
+        input::DefinitionInput,
+        install::Install,
+        tag::{RefTag, Tag},
+    },
     draft::draft_definition::{
-        DraftDefinition, DraftDefinitionInput, DraftEdge, DraftEdgeOverride, DraftInstall,
-        DraftMetadata, DraftProcessor, DraftProcessorOverride,
+        DraftArguments, DraftDefinition, DraftDefinitionInput, DraftEdge, DraftEdgeOverride,
+        DraftEnvironments, DraftMetadata, DraftProcessor, DraftProcessorOverride,
     },
     reference_value::{LazyRef, LazyRefOrValue, ReferencedValue},
 };
 
-use common::thread::readonly;
+use common::thread::{readonly, Readonly};
+use serde_json::Value;
 use uuid::Uuid;
 
 use crate::{
@@ -18,11 +24,15 @@ use crate::{
         arguments::to_draft_arguments,
         environments::to_draft_environments,
         processors::{to_draft_processor_override, to_node_draft_processor},
+        tags::to_tags,
         REFERENCE_PREFIX,
     },
 };
 
 impl DefinitionDto {
+    pub fn map_draft(self) -> DraftDefinition {
+        self.map_draft_with_location(None)
+    }
     pub fn map_draft_overwrite_location(self, location: String) -> DraftDefinition {
         let location = Some(location);
         let mut definition = self.map_draft_with_location(location.clone());
@@ -31,6 +41,7 @@ impl DefinitionDto {
     }
     pub fn map_draft_with_location(self, location: Option<String>) -> DraftDefinition {
         let mut definition = DraftDefinition {
+            parent: None,
             id: self.id.clone().unwrap_or(Uuid::new_v4().to_string()),
             location: self.location.clone().or(location),
             name: self.name.clone(),
@@ -48,7 +59,47 @@ impl DefinitionDto {
         self.set_draft_metadata(&mut definition);
         definition
     }
+    pub fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {
+        self.arguments
+            .iter()
+            .map(|(key, value)| (key.clone(), readonly(value.clone())))
+            .collect()
+    }
+    pub fn environments(&self) -> HashMap<String, Readonly<HashMap<String, String>>> {
+        self.environments
+            .iter()
+            .map(|(key, value)| (key.clone(), readonly(value.clone())))
+            .collect()
+    }
 
+    pub fn list_tags(&self) -> HashMap<String, Readonly<RefTag>> {
+        let root_path = "#".to_string();
+        let root_tag = readonly(RefTag {
+            r#ref: root_path.clone(),
+            value: Tag {
+                label: None,
+                tags: HashMap::new(),
+                other: Value::Null,
+            },
+        });
+        let tags = to_tags(&root_tag, &root_path, &self.tags);
+
+        let mut all_tags = tags
+            .iter()
+            .map(|(_key, path, _parent_tag, tag)| (path.clone(), tag.clone()))
+            .collect::<HashMap<String, Readonly<RefTag>>>();
+        all_tags.insert(root_path, root_tag.clone());
+        let tags: HashMap<String, Arc<std::sync::RwLock<RefTag>>> = tags
+            .into_iter()
+            .filter(|(_key, _path, parent_tag, _tag)| Arc::ptr_eq(parent_tag, &root_tag))
+            .map(|(_key, path, _parent_tag, tag)| (path.clone(), tag.clone()))
+            .collect::<HashMap<String, Readonly<RefTag>>>();
+        if let Ok(mut root_tag) = root_tag.write() {
+            root_tag.value.tags = tags;
+        };
+        all_tags
+    }
+    
     fn set_draft_processors(&self, definition: &mut DraftDefinition) {
         definition.processors = self
             .processors
@@ -59,7 +110,10 @@ impl DefinitionDto {
                     readonly(DraftProcessor {
                         arguments: to_draft_arguments(&processor.arguments, &definition.arguments),
                         program: processor.program.clone(),
-                        install: processor.install.as_ref().map(|install| DraftInstall {
+                        install: processor.install.as_ref().map(|install| Install::<
+                            DraftArguments,
+                            DraftEnvironments,
+                        > {
                             arguments: to_draft_arguments(
                                 &install.arguments,
                                 &definition.arguments,
@@ -120,7 +174,7 @@ impl DefinitionDto {
                                         ) {
                                             Some(DefinitionInput::Processor(
                                                 DraftProcessorOverride::processor(&Some(
-                                                    LazyRef::referenced_value(
+                                                    LazyRef::new_referenced_value(
                                                         text_definition.clone(),
                                                         processor.clone(),
                                                     ),
@@ -225,7 +279,7 @@ impl DefinitionDto {
                                             definition: metadata_edge
                                                 .definition
                                                 .clone()
-                                                .map(Self::map),
+                                                .map(Self::map_draft),
                                         })
                                         .unwrap_or(DraftEdgeOverride {
                                             arguments: to_draft_arguments(
@@ -241,7 +295,7 @@ impl DefinitionDto {
                                             definition: metadata_edge
                                                 .definition
                                                 .clone()
-                                                .map(Self::map),
+                                                .map(Self::map_draft),
                                         }),
                                 ),
                             })

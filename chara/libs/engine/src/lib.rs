@@ -3,44 +3,45 @@ use std::{
     thread::{self},
 };
 
-use clean::clean_definition::{CleanDefinition, CleanDefinitionInput, CleanForeignDefinition};
 use common::{
-    merge::Merge, thread::{readonly, Readonly}, ThreadError
+    merge::Merge,
+    thread::{readonly, Readonly},
+    ThreadError,
 };
 use contexts::ProcessorContext;
 
-use draft::draft_definition::DraftDefinition;
+use draft::draft_definition::{DefinedDefinitionInput, DraftDefinition, DraftDefinitionInput, DraftForeignDefinition};
 use errors::CharaError;
 use log::error;
 use processor::ProcessorResult;
+pub mod clean;
 pub mod cli;
 pub mod contexts;
 pub mod definition;
 mod definition_test;
 pub mod draft;
-pub mod clean;
 pub mod errors;
 pub mod processor;
 pub mod reference_value;
 pub trait Definitions: Send + Sync {
-    fn get(&self, definition: &CleanDefinitionInput) -> Result<DraftDefinition, CharaError>;
+    fn get(&self, definition: &DefinedDefinitionInput) -> Result<DraftDefinition, CharaError>;
     fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, CharaError>;
-    fn save(&self, definition: &CleanDefinition) -> Result<(), CharaError>;
+    fn save(&self, definition: &DraftDefinition) -> Result<(), CharaError>;
 }
 
 pub fn run(
-    definition: CleanDefinition,
+    definition: DraftDefinition,
     definitions: Arc<dyn Definitions>,
-) -> Result<CleanDefinition, CharaError> {
+) -> Result<DraftDefinition, CharaError> {
     let definition = process_definition(readonly(definition.clone()), &definitions)?;
     definitions.save(&definition)?;
     Ok(definition)
 }
 
 fn process_definition(
-    definition: Readonly<CleanDefinition>,
+    definition: Readonly<DraftDefinition>,
     definitions: &Arc<dyn Definitions>,
-) -> Result<CleanDefinition, CharaError> {
+) -> Result<DraftDefinition, CharaError> {
     let definition_value = definition
         .read()
         .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
@@ -61,7 +62,7 @@ fn process_definition(
 }
 
 fn handle_results(
-    source_definition: Readonly<CleanDefinition>,
+    source_definition: Readonly<DraftDefinition>,
     results: Vec<(ProcessorContext, ProcessorResult)>,
     definitions: &Arc<dyn Definitions>,
 ) -> Result<(), CharaError> {
@@ -111,9 +112,9 @@ fn handle_results(
 }
 
 fn get_definitions(
-    definition: &CleanDefinition,
+    definition: &DraftDefinition,
     definitions: &Arc<dyn Definitions>,
-) -> Vec<(Readonly<CleanForeignDefinition>, Option<DraftDefinition>)> {
+) -> Vec<(Readonly<DraftForeignDefinition>, Option<DraftDefinition>)> {
     definition
         .foreign_definitions
         .iter()
@@ -128,7 +129,8 @@ fn get_definitions(
                         definition
                             .input
                             .as_ref()
-                            .map(|input| definitions.get(input))
+                            .and_then(|input| input.to_defined())
+                            .map(|input| definitions.get(&input))
                             .transpose()
                     })
                     .map(|found_definition| (definition, found_definition))
