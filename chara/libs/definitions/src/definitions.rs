@@ -8,7 +8,7 @@ use common::ThreadError;
 use engine::{
     contexts::ProcessorContext,
     definition::input::DefinitionInput,
-    draft::draft_definition::{DefinedDefinitionInput, DraftDefinition, DraftDefinitionInput},
+    draft::draft_definition::{DefinedDefinitionInput, DraftDefinition},
     errors::CharaError,
     processor::{Enrichment, ProcessorResult},
     Definitions as ForeignDefinitions,

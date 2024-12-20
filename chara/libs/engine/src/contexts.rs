@@ -4,10 +4,9 @@ use serde_json::{Map, Value};
 
 use crate::{
     draft::draft_definition::{
-        DefinedProcessorOverride, DraftArguments, DraftEnvironments, DraftMetadata, DraftProcessor, DraftProcessorOverride
+        DefinedProcessorOverride, DraftMetadata, DraftProcessorOverride
     },
-    processor::ProcessorOverride,
-    reference_value::{LazyRef, ReferencedValue},
+    reference_value::LazyRef,
 };
 
 impl DraftProcessorOverride {

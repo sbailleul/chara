@@ -1,6 +1,5 @@
 use common::merge::{Merge, Overwrite};
 
-use crate::cli::{Arguments, Environment};
 
 #[derive(Debug, Clone)]
 pub struct Install<TArguments, TEnvironment> {

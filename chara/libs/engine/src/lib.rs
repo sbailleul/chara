@@ -10,7 +10,7 @@ use common::{
 };
 use contexts::ProcessorContext;
 
-use draft::draft_definition::{DefinedDefinitionInput, DraftDefinition, DraftDefinitionInput, DraftForeignDefinition};
+use draft::draft_definition::{DefinedDefinitionInput, DraftDefinition, DraftForeignDefinition};
 use errors::CharaError;
 use log::error;
 use processor::ProcessorResult;

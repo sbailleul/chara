@@ -1,14 +1,12 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use common::{
-    collection::map,
     merge::{Merge, Overwrite},
     thread::Readonly,
 };
 use serde_json::Map;
 
 use crate::{
-    cli::Arguments,
     contexts::{
         ContextDto, DefinitionContextDto, EdgeContext, ProcessorContext, WritePermissionsDto,
     },
@@ -16,12 +14,11 @@ use crate::{
         edge::{Edge, EdgeOverride},
         foreign_definition::ForeignDefinition,
         input::DefinitionInput,
-        install::Install,
         metadata::Metadata,
         tag::RefTag,
     },
     processor::{Processor, ProcessorOverride},
-    reference_value::{LazyRef, LazyRefOrValue, RefOrValue, ReferencedValue},
+    reference_value::{LazyRef, LazyRefOrValue, ReferencedValue},
 };
 pub type DraftArguments = LazyRefOrValue<Vec<String>>;
 

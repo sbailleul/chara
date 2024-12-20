@@ -1,13 +1,10 @@
-use std::sync::Arc;
 
-use common::{merge::Merge, thread::Readonly};
+use common::merge::Merge;
 use serde_json::{Map, Value};
 
 use crate::{
-    cli::{Arguments, Environment},
     definition::install::Install,
-    draft::draft_definition::{DraftArguments, DraftDefinition, DraftEnvironments, DraftProcessor},
-    reference_value::ReferencedValue,
+    draft::draft_definition::DraftDefinition,
 };
 
 #[derive(Debug)]

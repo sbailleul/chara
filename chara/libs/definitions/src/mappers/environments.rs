@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use common::thread::Readonly;
 use engine::{
-    cli::Environment,
     draft::draft_definition::DraftEnvironments,
     reference_value::{LazyRefOrValue, ReferencedValue},
 };

@@ -1,7 +1,6 @@
 use engine::{
     draft::draft_definition::{DraftDefinition, DraftProcessorOverride},
-    processor::ProcessorOverride,
-    reference_value::{LazyRef, ReferencedValue},
+    reference_value::LazyRef,
 };
 
 use crate::definition::{ProcessorOverrideDto, ReferenceOrObjectDto};
