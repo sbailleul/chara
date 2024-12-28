@@ -11,6 +11,8 @@ fn main() {
 
     let definition = DefinitionsImpl::get(
         "/home/sbailleul/code/chara/examples/chara.json".to_string(),
+        // "/home/sbailleul/code/chara/chara/cli/chara_results/30ec8abe-533b-4c34-8a9b-2356cc44c2b8.json".to_string(),
+
         // "/home/sbailleul/code/chara/chara/cli/chara_results/test.json".to_string(),
     );
     if let Ok(definition) = definition {

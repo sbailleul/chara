@@ -9,7 +9,7 @@ use engine::{
     reference_value::{LazyRef, LazyRefOrValue, ReferencedValue},
 };
 
-use common::thread::{readonly, Readonly};
+use common::thread::{readonly, Read, Readonly};
 use serde_json::Value;
 use uuid::Uuid;
 
@@ -25,18 +25,18 @@ use crate::{
 };
 
 impl DefinitionDto {
-    pub fn map_draft(self) -> Definition {
-        self.map_with_location(None)
+    pub fn map(self) -> Definition {
+        self.map_with_location(None, None)
     }
     pub fn map_overwrite_location(self, location: String) -> Definition {
         let location = Some(location);
-        let mut definition = self.map_with_location(location.clone());
+        let mut definition = self.map_with_location(location.clone(), None);
         definition.location = location;
         definition
     }
-    pub fn map_with_location(self, location: Option<String>) -> Definition {
+    pub fn map_with_location(self, location: Option<String>, parent: Option<Readonly<Definition>>) -> Definition {
         let mut definition = Definition {
-            parent: None,
+            parent,
             id: self.id.clone().unwrap_or(Uuid::new_v4().to_string()),
             location: self.location.clone().or(location),
             name: self.name.clone(),
@@ -146,7 +146,7 @@ impl DefinitionDto {
                                 foreign_definition
                             {
                                 let foreign_definition = readonly(ForeignDefinition::output(
-                                    ready_definition.clone().map_with_location(None),
+                                    ready_definition.clone().map(),
                                 ));
                                 definition
                                     .foreign_definitions
@@ -271,7 +271,7 @@ impl DefinitionDto {
                                             definition: metadata_edge
                                                 .definition
                                                 .clone()
-                                                .map(Self::map_draft),
+                                                .map(Self::map),
                                         })
                                         .unwrap_or(EdgeOverride {
                                             arguments: to_arguments(
@@ -287,7 +287,7 @@ impl DefinitionDto {
                                             definition: metadata_edge
                                                 .definition
                                                 .clone()
-                                                .map(Self::map_draft),
+                                                .map(Self::map),
                                         }),
                                 ),
                             })

@@ -5,7 +5,7 @@ use std::{
 
 use common::{
     merge::Merge,
-    thread::{readonly, Readonly},
+    thread::{readonly, Read, Readonly},
     ThreadError,
 };
 use contexts::ProcessorContext;
@@ -15,7 +15,6 @@ use definition::definition::Definition;
 use errors::CharaError;
 use log::error;
 use processor::ProcessorResult;
-pub mod clean;
 pub mod cli;
 pub mod contexts;
 pub mod definition;
@@ -25,7 +24,7 @@ pub mod processor;
 pub mod reference_value;
 pub trait Definitions: Send + Sync {
     fn get(&self, definition: &DefinedDefinitionInput) -> Result<Definition, CharaError>;
-    fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, CharaError>;
+    fn enrich(&self, context: &ProcessorContext, parent: Readonly<Definition>) -> Result<ProcessorResult, CharaError>;
     fn save(&self, definition: &Definition) -> Result<(), CharaError>;
 }
 
@@ -52,10 +51,12 @@ fn process_definition(
             .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
         if let None = foreign_definition.output {
             foreign_definition.output.merge(&definition_output);
+            dbg!(&foreign_definition.output);
+            dbg!(&definition_output);
         }
     }
     let contexts = definition_value.processors_contexts();
-    let results = enrich(contexts, definitions.clone());
+    let results = enrich(contexts, definitions.clone(), &definition);
 
     handle_results(definition.clone(), results, definitions)?;
     Ok(definition_value.to_owned())
@@ -87,20 +88,20 @@ fn handle_results(
                 metadata.other.append(&mut metadata_enrichment);
             }
         }
-        if let (Some(result_definition), Some(edge_context)) =
+        if let (Some(mut result_definition), Some(edge_context)) =
             (result.definition, context.definition.edge)
         {
             if let Some(edge) = metadata.edges.get_mut(&edge_context.name) {
-                // if let Ok(src_edge) = edge.edge.read() {
-                //     if let Some(foreign_definition) = src_edge.definition.as_ref() {
-                //         if let Ok(foreign_definition) = foreign_definition.read() {
-                //             if let Some(foreign_definition) = foreign_definition.output.as_ref() {
-                //                 result_definition.merge(foreign_definition);
-                //             }
-                //         }
-                //     }
-                // }
-                // edge.definition.merge(&Some(result_definition));
+                if let Some(src_edge) = edge.edge.value() {
+                    if let Some(foreign_definition) = src_edge.definition.as_ref() {
+                        if let Ok(foreign_definition) = foreign_definition.read() {
+                            if let Some(foreign_definition) = foreign_definition.output.as_ref() {
+                                result_definition.merge(foreign_definition);
+                            }
+                        }
+                    }
+                }
+                edge.definition.merge(&Some(result_definition));
                 if let Some(definition) = edge.definition.as_mut() {
                     definition.parent = Some(source_definition.clone());
                     *definition = process_definition(readonly(definition.clone()), definitions)?;
@@ -150,14 +151,16 @@ fn get_definitions(
 fn enrich(
     contexts: Vec<ProcessorContext>,
     definitions: Arc<dyn Definitions>,
+    parent: &Readonly<Definition>
 ) -> Vec<(ProcessorContext, ProcessorResult)> {
     contexts
         .into_iter()
         .map(|context| {
             let definitions = definitions.clone();
+            let parent = parent.clone();
             thread::spawn(move || {
                 definitions
-                    .enrich(&context)
+                    .enrich(&context, parent)
                     .map(|processor_result| (context, processor_result))
             })
         })

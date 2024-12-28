@@ -30,7 +30,7 @@ impl DraftDefinitionInput {
         match self {
             BaseDefinitionInput::File(file) => Some(DefinedDefinitionInput::File(file.clone())),
             BaseDefinitionInput::Text(txt) => Some(DefinedDefinitionInput::Text(txt.clone())),
-            BaseDefinitionInput::Value(value) => Some(DefinedDefinitionInput::Value(value.clone())),
+                BaseDefinitionInput::Value(value) => Some(DefinedDefinitionInput::Value(value.clone())),
             BaseDefinitionInput::Processor(processor) => processor
                 .map()
                 .map(|processor| DefinedDefinitionInput::Processor(processor)),

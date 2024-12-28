@@ -4,11 +4,11 @@ use std::{
     io::BufReader,
 };
 
-use common::ThreadError;
+use common::{thread::Readonly, ThreadError};
 use engine::{
     contexts::ProcessorContext,
-    definition::input::{BaseDefinitionInput, DefinedDefinitionInput},
     definition::definition::Definition,
+    definition::input::{BaseDefinitionInput, DefinedDefinitionInput},
     errors::CharaError,
     processor::{Enrichment, ProcessorResult},
     Definitions as ForeignDefinitions,
@@ -31,14 +31,8 @@ impl Definitions {
         Definitions::read_output::<DefinitionDto>(input).map(|def| def.output)
     }
     pub fn get(path: String) -> Result<Definition, CharaError> {
-        Definitions::read_output::<DefinitionDto>(&BaseDefinitionInput::File(path.clone())).map(
-            |read_output| DefinitionDto::map_overwrite_location(read_output.output, path),
-        )
-    }
-    pub fn get_draft(path: String) -> Result<Definition, CharaError> {
-        Definitions::read_output::<DefinitionDto>(&BaseDefinitionInput::File(path.clone())).map(
-            |read_output| DefinitionDto::map_overwrite_location(read_output.output, path),
-        )
+        Definitions::read_output::<DefinitionDto>(&BaseDefinitionInput::File(path.clone()))
+            .map(|read_output| DefinitionDto::map_overwrite_location(read_output.output, path))
     }
     fn read_output<T: for<'a> Deserialize<'a>>(
         input: &DefinedDefinitionInput,
@@ -65,16 +59,8 @@ impl Definitions {
             BaseDefinitionInput::Processor(processor) => {
                 info!("Run definition processor");
                 processor
-                    .processor
-                    .value
-                    .read()
-                    .map_err(|_| CharaError::Thread(ThreadError::Poison))
-                    .and_then(|processor| {
-                        processor.output_stdout(None).and_then(|stdout| {
-                            serde_json::from_str(&stdout).map_err(CharaError::Json)
-                        })
-                    })
-                    
+                    .output_stdout(None)
+                    .and_then(|stdout| serde_json::from_str(&stdout).map_err(CharaError::Json))
             }
             BaseDefinitionInput::Value(value) => {
                 serde_json::from_value(value.clone()).map_err(CharaError::Json)
@@ -86,7 +72,7 @@ impl Definitions {
 impl ForeignDefinitions for Definitions {
     fn get(&self, input: &DefinedDefinitionInput) -> Result<Definition, CharaError> {
         Definitions::read_output::<DefinitionDto>(input).map(|read_output| {
-            DefinitionDto::map_with_location(read_output.output, read_output.location)
+            DefinitionDto::map_with_location(read_output.output, read_output.location, None)
         })
     }
 
@@ -100,7 +86,7 @@ impl ForeignDefinitions for Definitions {
         .map_err(CharaError::Json)?;
         Ok(())
     }
-    fn enrich(&self, context: &ProcessorContext) -> Result<ProcessorResult, CharaError> {
+    fn enrich(&self, context: &ProcessorContext, parent: Readonly<Definition>) -> Result<ProcessorResult, CharaError> {
         context
             .processor
             .processor
@@ -125,13 +111,15 @@ impl ForeignDefinitions for Definitions {
                         path.clone(),
                     ]))
                     .and_then(|_output| {
-                        Definitions::read_output::<ProcessorResultDto>(&BaseDefinitionInput::File(path))
+                        Definitions::read_output::<ProcessorResultDto>(&BaseDefinitionInput::File(
+                            path,
+                        ))
                     })
                     .map(|result| ProcessorResult {
                         definition: result
                             .output
                             .definition
-                            .map(|def| def.map_with_location(result.location)),
+                            .map(|def| def.map_with_location(result.location, Some(parent))),
                         enrichment: result.output.enrichment.map(|enrichment| Enrichment {
                             edge: enrichment.edge,
                             metadata: enrichment.metadata,
