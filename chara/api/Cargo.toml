@@ -1,0 +1,10 @@
+[package]
+name = "api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+engine = { workspace = true }
+definitions = { workspace = true }
+
+rocket = { workspace = true , features = [ "json"]}

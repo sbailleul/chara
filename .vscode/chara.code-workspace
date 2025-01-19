@@ -1,6 +1,7 @@
 {
 	"folders": [
 		{ "name": "cli", "path": "../chara/cli" },
+		{ "name": "api", "path": "../chara/api" },
 		{ "name": "lib_engine", "path": "../chara/libs/engine" },
 		{ "name": "lib_definitions", "path": "../chara/libs/definitions" },
 		{ "name": "lib_graph", "path": "../chara/libs/graph" },

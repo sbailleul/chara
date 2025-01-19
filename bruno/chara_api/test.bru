@@ -1,0 +1,88 @@
+meta {
+  name: test
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api}}/definitions
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "c7447dd8-2da4-4719-b4c3-4250200c9563",
+    "location": "/home/sbailleul/code/chara/examples/chara.json", 
+    "name": "library",
+    "metadata": {
+      "build": {
+        "tags": ["#/CI/workflow/build"],
+        "edges": ["#/workflows"],
+        "file": "/home/sbailleul/code/chara/examples/.github/workflows/build-workflow.yaml",
+        "processor": "#/reusable_workflow"
+      }
+    },
+    "edges": {
+      "workflows": {
+        "definition": {
+          "reference": "#/http_client",
+          "arguments": [
+            "--url",
+            "https://sbailleul.github.io/chara_public/definition.json"
+          ]
+        },
+        "processor": "#/github"
+      },
+      "stock": {
+        "definition": "https://github/book-club/stock/chara.json"
+      }
+    },
+    "tags": {
+      "CI": {
+        "tags": {
+          "workflow": {
+            "tags": {
+              "build": {
+                "label": "It's github stuff"
+              }
+            }
+          }
+        }
+      }
+    },
+    "processors": {
+      "github": {
+        "program": "./github",
+        "currentDirectory": "../../scrappers/target/debug",
+        "environments": ["#/github", { "HTTP_PROXY": "localhost:6018" }],
+        "arguments": ["#/workflow"],
+        "install": {
+          "currentDirectory": "../../scrappers/github",
+          "program": "cargo",
+          "arguments": ["build"]
+        }
+      },
+      "http_client": {
+        "program": "./http",
+        "currentDirectory": "../../scrappers/target/debug",
+        "install": {
+          "currentDirectory": "../../scrappers/http",
+          "program": "cargo",
+          "arguments": ["build"]
+        }
+      }
+    },
+    "arguments": {
+      "workflow": [
+        "--app-id",
+        "1049213",
+        "--installation-id",
+        "56895978",
+        "--private-key",
+        "/home/sbailleul/code/chara/examples/chara-github-scrapper.2024-11-07.private-key.pem"
+      ]
+    }
+  }
+  
+}

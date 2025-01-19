@@ -9,7 +9,7 @@ fn main() {
 
     let definitions: Arc<dyn Definitions> = Arc::new(DefinitionsImpl {});
 
-    let definition = DefinitionsImpl::get(
+    let definition = DefinitionsImpl::get_from_path(
         "/home/sbailleul/code/chara/examples/chara.json".to_string(),
         // "/home/sbailleul/code/chara/chara/cli/chara_results/30ec8abe-533b-4c34-8a9b-2356cc44c2b8.json".to_string(),
 

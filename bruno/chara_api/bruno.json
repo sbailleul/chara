@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "chara_api",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

@@ -30,10 +30,15 @@ impl Definitions {
     pub fn read(input: &DefinedDefinitionInput) -> Result<DefinitionDto, CharaError> {
         Definitions::read_output::<DefinitionDto>(input).map(|def| def.output)
     }
-    pub fn get(path: String) -> Result<Definition, CharaError> {
+    pub fn get_from_path(path: String) -> Result<Definition, CharaError> {
         Definitions::read_output::<DefinitionDto>(&BaseDefinitionInput::File(path.clone()))
             .map(|read_output| DefinitionDto::map_overwrite_location(read_output.output, path))
     }
+    pub fn get_from_definition(definition: DefinitionDto) -> Result<Definition, CharaError> {
+        Ok(definition.map())
+    }
+    
+
     fn read_output<T: for<'a> Deserialize<'a>>(
         input: &DefinedDefinitionInput,
     ) -> Result<ReadOutput<T>, CharaError> {
@@ -86,7 +91,11 @@ impl ForeignDefinitions for Definitions {
         .map_err(CharaError::Json)?;
         Ok(())
     }
-    fn enrich(&self, context: &ProcessorContext, parent: Readonly<Definition>) -> Result<ProcessorResult, CharaError> {
+    fn enrich(
+        &self,
+        context: &ProcessorContext,
+        parent: Readonly<Definition>,
+    ) -> Result<ProcessorResult, CharaError> {
         context
             .processor
             .processor
