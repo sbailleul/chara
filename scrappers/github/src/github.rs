@@ -1,7 +1,7 @@
 use std::{
     fmt::{self, Display, Formatter},
     fs,
-    path::{Path},
+    path::Path,
 };
 
 use jsonwebtoken::EncodingKey;
@@ -56,7 +56,7 @@ impl GithubContext {
 pub struct Github {
     pub octocrab: Octocrab,
 }
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct Repository {
     pub owner: String,
     pub name: String,
@@ -82,15 +82,13 @@ impl Github {
             }
             None => Octocrab::default(),
         };
-        let instance = match  ctx.and_then(|ctx| ctx.app).map(|app| app.installation_id){
-            Some(installation_id) =>  
-                instance
+        let instance = match ctx.and_then(|ctx| ctx.app).map(|app| app.installation_id) {
+            Some(installation_id) => instance
                 .installation(installation_id)
                 .map_err(Error::Octocrab)?,
             None => instance,
         };
-        Ok(Self{octocrab: instance})
-       
+        Ok(Self { octocrab: instance })
     }
 
     pub async fn get_content(
@@ -98,14 +96,19 @@ impl Github {
         repository: &Repository,
         path: &str,
     ) -> Result<ContentItems, Error> {
-        info!("Try to get {path} content for {repository}");
-        self.octocrab
-            .repos(&repository.owner, &repository.name)
-            .get_content()
-            .path(path)
-            .r#ref("main")
-            .send()
-            .await
-            .map_err(Error::Octocrab)
+        if let Some((path, r#ref)) = path.split_once("@") {
+            info!("Try to get {path} content for {repository} on ref {ref}");
+            self.octocrab
+                .repos(&repository.owner, &repository.name)
+                .get_content()
+                .path(path)
+                .r#ref( r#ref)
+                .send()
+                .await
+                .map_err(Error::Octocrab)
+        }else{
+            Err(Error::InvalidReusableWorkflowPath(path.to_string()))
+        }
+
     }
 }

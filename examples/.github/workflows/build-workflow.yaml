@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   call-workflow:
-    uses: sbailleul/chara-public/.github/workflows/build-workflow.yaml@main
+    uses: sbailleul/chara_public/.github/workflows/build-workflow.yaml@main
   call-workflow-passing-data:
     permissions:
       contents: read

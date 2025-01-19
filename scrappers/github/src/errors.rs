@@ -18,4 +18,6 @@ pub enum Error {
     NoWorkspaceContentAvailable,
     #[error("Json web token {0}")]
     JsonWebToken(jsonwebtoken::errors::Error),
+    #[error("Invalid reusable workflow path {0}")]
+    InvalidReusableWorkflowPath(String),
 }

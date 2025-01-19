@@ -10,16 +10,10 @@ use crate::{
         ContextDto, DefinitionContextDto, EdgeContext, ProcessorContext, WritePermissionsDto,
     },
     definition::{
-        edge::Edge,
-        foreign_definition::ForeignDefinition,
-        metadata::Metadata,
-        tag::RefTag,
+        edge::Edge, foreign_definition::ForeignDefinition, metadata::Metadata, tag::RefTag,
     },
     processor::Processor,
 };
-
-
-
 
 #[derive(Debug, Clone)]
 pub struct Definition {
@@ -34,6 +28,7 @@ pub struct Definition {
     pub arguments: HashMap<String, Readonly<Vec<String>>>,
     pub environments: HashMap<String, Readonly<HashMap<String, String>>>,
     pub foreign_definitions: HashMap<String, Readonly<ForeignDefinition>>,
+
 }
 
 impl Merge for Definition {
@@ -50,7 +45,32 @@ impl Merge for Definition {
         self.foreign_definitions.merge(&other.foreign_definitions);
     }
 }
+
 impl Definition {
+    pub fn new(
+        parent: Option<Readonly<Definition>>,
+        name: String,
+        id: String,
+        location: Option<String>,
+        arguments: HashMap<String, Readonly<Vec<String>>>,
+        environments: HashMap<String, Readonly<HashMap<String, String>>>,
+    ) -> Self {
+        Self {
+            parent,
+            name,
+            id,
+            location,
+            metadata: HashMap::new(),
+            edges: HashMap::new(),
+            tags: HashMap::new(),
+            processors: HashMap::new(),
+            arguments,
+            environments,
+            foreign_definitions: HashMap::new(),
+
+        }
+    }
+
     pub fn processors_contexts(&self) -> Vec<ProcessorContext> {
         let definition_contexts = self.metadata.iter().map(|(metadata_key, metadata_value)| {
             metadata_value.read().ok().map(|metadata_lock| {

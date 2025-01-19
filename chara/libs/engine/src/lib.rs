@@ -5,7 +5,7 @@ use std::{
 
 use common::{
     merge::Merge,
-    thread::{readonly, Read, Readonly},
+    thread::{readonly, Readonly},
     ThreadError,
 };
 use contexts::ProcessorContext;
@@ -18,7 +18,6 @@ use processor::ProcessorResult;
 pub mod cli;
 pub mod contexts;
 pub mod definition;
-mod definition_test;
 pub mod errors;
 pub mod processor;
 pub mod reference_value;
@@ -51,8 +50,6 @@ fn process_definition(
             .map_err(|_| CharaError::Thread(ThreadError::Poison))?;
         if let None = foreign_definition.output {
             foreign_definition.output.merge(&definition_output);
-            dbg!(&foreign_definition.output);
-            dbg!(&definition_output);
         }
     }
     let contexts = definition_value.processors_contexts();

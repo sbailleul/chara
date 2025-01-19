@@ -1,25 +1,22 @@
-use std::collections::HashMap;
 
-use common::thread::Readonly;
 use engine::{
-    cli::DraftArguments, reference_value::{LazyRefOrValue, ReferencedValue}
+    cli::DraftArguments, definition::definition::Definition, reference_value::{LazyRefOrValue, ReferencedValue}
 };
 
 use super::REFERENCE_PREFIX;
 
 pub fn to_arguments(
     dto_arguments: &Vec<String>,
-    arguments: &HashMap<String, Readonly<Vec<String>>>,
+    definition: &Definition,
 ) -> Vec<DraftArguments> {
     dto_arguments
         .iter()
         .map(|argument| {
             if argument.starts_with(REFERENCE_PREFIX) {
-                arguments
-                    .get(argument.trim_start_matches(REFERENCE_PREFIX))
+                definition.find_argument(argument)
                     .map(|v| v.clone())
                     .map(|arguments| {
-                        LazyRefOrValue::referenced_value(argument.clone(), arguments.clone())
+                        LazyRefOrValue::to_referenced_value(argument.clone(), arguments.clone())
                     })
                     .or(Some(LazyRefOrValue::Ref(argument.clone())))
             } else {

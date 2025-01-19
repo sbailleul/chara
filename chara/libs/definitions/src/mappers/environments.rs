@@ -1,13 +1,10 @@
-use std::collections::HashMap;
 
-use common::thread::Readonly;
 use engine::{
-    cli::DraftEnvironments, reference_value::{LazyRefOrValue, ReferencedValue}
+    cli::DraftEnvironments, definition::definition::Definition, reference_value::{LazyRefOrValue, ReferencedValue}
 };
 
 use crate::definition::EnvironmentDto;
 
-use super::REFERENCE_PREFIX;
 
 
 pub fn from_environments(environments: Vec<DraftEnvironments>) -> Vec<EnvironmentDto> {
@@ -23,13 +20,13 @@ pub fn from_environments(environments: Vec<DraftEnvironments>) -> Vec<Environmen
 
 pub fn to_environments(
     dto_environments: &Vec<EnvironmentDto>,
-    environments: &HashMap<String, Readonly<HashMap<String, String>>>,
+    definition: &Definition,
 ) -> Vec<DraftEnvironments> {
     dto_environments
         .iter()
         .map(|environment| match environment {
-            EnvironmentDto::Reference(reference) => environments
-                .get(reference.trim_start_matches(REFERENCE_PREFIX))
+            EnvironmentDto::Reference(reference) => definition
+                .find_environment(reference)
                 .map(|v| {
                     LazyRefOrValue::ReferencedValue(ReferencedValue {
                         r#ref: reference.clone(),

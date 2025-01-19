@@ -1,15 +1,20 @@
 use std::{collections::HashMap, path, sync::Arc};
 
 use engine::{
-    definition::{
-        edge::{Edge, EdgeOverride}, foreign_definition::ForeignDefinition, input::{BaseDefinitionInput, DraftDefinitionInput}, install::Install, metadata::Metadata, tag::{RefTag, Tag}
-    },
     definition::definition::Definition,
+    definition::{
+        edge::{Edge, EdgeOverride},
+        foreign_definition::ForeignDefinition,
+        input::{BaseDefinitionInput, DraftDefinitionInput},
+        install::Install,
+        metadata::Metadata,
+        tag::{RefTag, Tag},
+    },
     processor::{DraftProcessorOverride, Processor},
     reference_value::{LazyRef, LazyRefOrValue, ReferencedValue},
 };
 
-use common::thread::{readonly, Read, Readonly};
+use common::thread::{readonly, Readonly};
 use serde_json::Value;
 use uuid::Uuid;
 
@@ -18,9 +23,8 @@ use crate::{
     mappers::{
         arguments::to_arguments,
         environments::to_environments,
-        processors::{to_processor_override, to_node_processor},
+        processors::{to_node_processor, to_processor_override},
         tags::to_tags,
-        REFERENCE_PREFIX,
     },
 };
 
@@ -34,26 +38,26 @@ impl DefinitionDto {
         definition.location = location;
         definition
     }
-    pub fn map_with_location(self, location: Option<String>, parent: Option<Readonly<Definition>>) -> Definition {
-        let mut definition = Definition {
+    pub fn map_with_location(
+        self,
+        location: Option<String>,
+        parent: Option<Readonly<Definition>>,
+    ) -> Definition {
+        let mut definition = Definition::new(
             parent,
-            id: self.id.clone().unwrap_or(Uuid::new_v4().to_string()),
-            location: self.location.clone().or(location),
-            name: self.name.clone(),
-            arguments: self.arguments(),
-            environments: self.environments(),
-            edges: HashMap::new(),
-            metadata: HashMap::new(),
-            processors: HashMap::new(),
-            tags: HashMap::new(),
-            foreign_definitions: HashMap::new(),
-        };
+            self.name.clone(),
+            self.id.clone().unwrap_or(Uuid::new_v4().to_string()),
+            self.location.clone().or(location),
+            self.arguments(),
+            self.environments(),
+        );
         self.set_processors(&mut definition);
         self.set_edges(&mut definition);
         definition.tags = self.list_tags();
         self.set_metadata(&mut definition);
         definition
     }
+
     pub fn arguments(&self) -> HashMap<String, Readonly<Vec<String>>> {
         self.arguments
             .iter()
@@ -103,24 +107,15 @@ impl DefinitionDto {
                 (
                     key.clone(),
                     readonly(Processor {
-                        arguments: to_arguments(&processor.arguments, &definition.arguments),
+                        arguments: to_arguments(&processor.arguments, &definition),
                         program: processor.program.clone(),
                         install: processor.install.as_ref().map(|install| Install {
-                            arguments: to_arguments(
-                                &install.arguments,
-                                &definition.arguments,
-                            ),
-                            environments: to_environments(
-                                &install.environments,
-                                &definition.environments,
-                            ),
+                            arguments: to_arguments(&install.arguments, &definition),
+                            environments: to_environments(&install.environments, &definition),
                             program: install.program.clone(),
                             current_directory: install.current_directory.clone(),
                         }),
-                        environments: to_environments(
-                            &processor.environments,
-                            &definition.environments,
-                        ),
+                        environments: to_environments(&processor.environments, &definition),
                         current_directory: processor.current_directory.clone(),
                     }),
                 )
@@ -161,9 +156,9 @@ impl DefinitionDto {
                                             serde_json::from_str(text_definition)
                                         {
                                             Some(BaseDefinitionInput::Value(content))
-                                        } else if let Some(processor) = definition.processors.get(
-                                            text_definition.trim_start_matches(REFERENCE_PREFIX),
-                                        ) {
+                                        } else if let Some(processor) =
+                                            definition.find_processor(text_definition)
+                                        {
                                             Some(BaseDefinitionInput::Processor(
                                                 DraftProcessorOverride::processor(&Some(
                                                     LazyRef::new_referenced_value(
@@ -182,10 +177,7 @@ impl DefinitionDto {
                                     }
                                     ForeignDefinitionDto::Processor(processor_override) => {
                                         Some(DraftDefinitionInput::Processor(
-                                            to_processor_override(
-                                                processor_override,
-                                                definition,
-                                            ),
+                                            to_processor_override(processor_override, definition),
                                         ))
                                     }
                                     ForeignDefinitionDto::Definition(_) => None,
@@ -209,7 +201,7 @@ impl DefinitionDto {
                         processor: edge
                             .processor
                             .as_ref()
-                            .map(|processor| to_node_processor(&processor, &definition)),
+                            .map(|processor| to_node_processor(&processor, definition)),
                         other: edge.other.clone(),
                     }),
                 )
@@ -231,15 +223,14 @@ impl DefinitionDto {
                                 ReferenceOrObjectDto::Reference(reference) => (
                                     reference.clone(),
                                     definition
-                                        .edges
-                                        .get(reference.trim_start_matches(REFERENCE_PREFIX))
+                                        .find_edge(reference)
                                         .map(|edge| {
-                                            EdgeOverride::edge(
-                                                LazyRefOrValue::ReferencedValue(ReferencedValue {
+                                            EdgeOverride::edge(LazyRefOrValue::ReferencedValue(
+                                                ReferencedValue {
                                                     r#ref: reference.clone(),
                                                     value: edge.clone(),
-                                                }),
-                                            )
+                                                },
+                                            ))
                                         })
                                         .unwrap_or(EdgeOverride::edge(LazyRefOrValue::Ref(
                                             reference.clone(),
@@ -248,22 +239,17 @@ impl DefinitionDto {
                                 ReferenceOrObjectDto::Object(metadata_edge) => (
                                     metadata_edge.r#ref.clone(),
                                     definition
-                                        .edges
-                                        .get(
-                                            metadata_edge
-                                                .r#ref
-                                                .trim_start_matches(REFERENCE_PREFIX),
-                                        )
+                                        .find_edge(&metadata_edge.r#ref)
                                         .map(|edge| EdgeOverride {
                                             arguments: to_arguments(
                                                 &metadata_edge.arguments,
-                                                &definition.arguments,
+                                                definition,
                                             ),
                                             environments: to_environments(
                                                 &metadata_edge.environments,
-                                                &definition.environments,
+                                                definition,
                                             ),
-                                            edge: LazyRefOrValue::referenced_value(
+                                            edge: LazyRefOrValue::to_referenced_value(
                                                 metadata_edge.r#ref.clone(),
                                                 edge.clone(),
                                             ),
@@ -276,11 +262,11 @@ impl DefinitionDto {
                                         .unwrap_or(EdgeOverride {
                                             arguments: to_arguments(
                                                 &metadata_edge.arguments,
-                                                &definition.arguments,
+                                                definition,
                                             ),
                                             environments: to_environments(
                                                 &metadata_edge.environments,
-                                                &definition.environments,
+                                                definition,
                                             ),
                                             edge: LazyRefOrValue::Ref(metadata_edge.r#ref.clone()),
                                             other: metadata_edge.other.clone(),
@@ -297,12 +283,11 @@ impl DefinitionDto {
                             .iter()
                             .map(|tag| {
                                 definition
-                                    .tags
-                                    .get(tag)
+                                    .find_tag(tag)
                                     .map(|found_tag| {
                                         (
                                             tag.clone(),
-                                            LazyRefOrValue::referenced_value(
+                                            LazyRefOrValue::to_referenced_value(
                                                 tag.clone(),
                                                 found_tag.clone(),
                                             ),

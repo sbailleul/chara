@@ -1,4 +1,6 @@
-use engine::{definition::definition::Definition, processor::DraftProcessorOverride, reference_value::LazyRef};
+use engine::{
+    definition::definition::Definition, processor::DraftProcessorOverride, reference_value::LazyRef,
+};
 
 use crate::definition::{ProcessorOverrideDto, ReferenceOrObjectDto};
 
@@ -36,11 +38,8 @@ pub fn to_processor_override(
             .processors
             .get(reference.trim_start_matches(REFERENCE_PREFIX))
             .map(|processor| DraftProcessorOverride {
-                arguments: to_arguments(&processor_override.arguments, &definition.arguments),
-                environments: to_environments(
-                    &processor_override.environments,
-                    &definition.environments,
-                ),
+                arguments: to_arguments(&processor_override.arguments, definition),
+                environments: to_environments(&processor_override.environments, definition),
                 processor: Some(LazyRef::new_referenced_value(
                     reference.clone(),
                     processor.clone(),
@@ -51,11 +50,8 @@ pub fn to_processor_override(
             ))))
     } else {
         DraftProcessorOverride {
-            arguments: to_arguments(&processor_override.arguments, &definition.arguments),
-            environments: to_environments(
-                &processor_override.environments,
-                &definition.environments,
-            ),
+            arguments: to_arguments(&processor_override.arguments, definition),
+            environments: to_environments(&processor_override.environments, definition),
             processor: None,
         }
     }
