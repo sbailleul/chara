@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use definitions::definition::DefinitionDto;
+use definitions::dto::definition::DefinitionDto;
 
 use definitions::definitions::Definitions as DefinitionsImpl;
 use engine::{
@@ -28,10 +28,10 @@ fn get_definition(id: &str) -> Json<DefinitionDto> {
     Json(DefinitionsImpl::read(&DefinedDefinitionInput::Id(id.to_string())).unwrap())
 }
 
-// #[get("/definitions")]
-// fn list_definitions() -> Json<DefinitionDto> {
-//     Json(DefinitionsImpl::read(&DefinedDefinitionInput::Id(id.to_string())).unwrap())
-// }
+#[get("/definitions")]
+fn list_definitions() -> Json<Vec<DefinitionDto>> {
+    Json(DefinitionsImpl::all_definitions().unwrap())
+}
 
 #[launch]
 fn rocket() -> _ {
@@ -45,7 +45,8 @@ fn rocket() -> _ {
         )
         .allow_credentials(true);
 
-    rocket::build()
-        .attach(cors.to_cors().unwrap())
-        .mount("/api", routes![process_definition, get_definition])
+    rocket::build().attach(cors.to_cors().unwrap()).mount(
+        "/api",
+        routes![process_definition, get_definition, list_definitions],
+    )
 }

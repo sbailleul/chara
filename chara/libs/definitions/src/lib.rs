@@ -1,5 +1,5 @@
 
 mod cli;
-pub mod definition;
+pub mod dto;
 pub mod definitions;
 mod mappers;

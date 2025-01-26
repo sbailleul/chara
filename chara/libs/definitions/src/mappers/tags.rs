@@ -8,7 +8,7 @@ use engine::{
      definition::tag::{RefTag, Tag}, errors::CharaError
 };
 
-use crate::definition::TagDto;
+use crate::dto::definition::TagDto;
 
 pub fn to_tags(
     parent: &Readonly<RefTag>,

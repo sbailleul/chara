@@ -4,7 +4,7 @@ use common::ThreadError;
 use engine::{definition::definition::Definition, errors::CharaError};
 
 use crate::{
-    definition::{
+    dto::definition::{
         DefinitionDto, EdgeDto, ForeignDefinitionDto, InstallDto, MetadataDto, MetadataEdge,
         ProcessorDto, ProcessorOverrideDto, ReferenceOrObjectDto, TagDto,
     },

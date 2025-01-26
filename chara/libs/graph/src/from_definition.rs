@@ -1,4 +1,4 @@
-use definitions::definition::{DefinitionDto, ReferenceOrObjectDto};
+use definitions::dto::definition::{DefinitionDto, ReferenceOrObjectDto};
 
 use crate::graph::{Edge, Graph, Node};
 use std::collections::HashSet;

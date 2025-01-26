@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
-use definitions::definition::{
+use definitions::dto::definition::{
     DefinitionDto, MetadataDto, ProcessorResultDto, ReferenceOrObjectDto,
 };
 use serde_json::{Map, Value};

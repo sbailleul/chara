@@ -1,6 +1,6 @@
 use std::{fs::File, io::Read, path::Path};
 
-use definitions::definition::{DefinitionContextDto, WritePermissionsDto};
+use definitions::dto::definition::{DefinitionContextDto, WritePermissionsDto};
 use log::info;
 
 use crate::{

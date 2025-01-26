@@ -1,4 +1,4 @@
-import { Test } from "@/routes/definition/-feature/Definition*";
+import { Definitions } from "@/routes/definition/-feature/Definitions";
 import { createLazyFileRoute } from "@tanstack/react-router";
 
 export const Route = createLazyFileRoute("/definition/")({
@@ -8,7 +8,7 @@ export const Route = createLazyFileRoute("/definition/")({
 function RouteComponent() {
 	return (
 		<div>
-			<Test />
+			<Definitions />
 		</div>
 	);
 }

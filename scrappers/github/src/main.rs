@@ -2,7 +2,7 @@ use std::fs;
 
 use clap::{command, Parser};
 use context::DefinitionContext;
-use definitions::definition::DefinitionContextDto;
+use definitions::dto::definition::DefinitionContextDto;
 use dtos::WorkflowDto;
 use errors::Error;
 use github::GithubContext;

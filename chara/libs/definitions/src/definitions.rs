@@ -1,7 +1,8 @@
 use std::{
     env,
-    fs::{self, canonicalize, File},
+    fs::{self, canonicalize, read_dir, DirEntry, File},
     io::BufReader,
+    path::PathBuf,
 };
 
 use common::{thread::Readonly, ThreadError};
@@ -18,7 +19,10 @@ use serde::Deserialize;
 
 use crate::{
     cli::Cli,
-    definition::{DefinitionDto, ProcessorResultDto},
+    dto::{
+        definition::{DefinitionDto, ProcessorResultDto},
+        definition_info::DefinitionInfo,
+    },
 };
 
 pub struct Definitions {}
@@ -83,6 +87,25 @@ impl Definitions {
 
     fn result_path(id: &str) -> Result<String, CharaError> {
         create_path("chara_results", Some(id))
+    }
+    pub fn all_definitions() -> Result<Vec<DefinitionDto>, CharaError> {
+        read_dir(get_directory("chara_results")?)
+            .map_err(CharaError::IO)
+            .map(|res| {
+                res.map(|e| {
+                    e.map_err(CharaError::IO)
+                        .map(|e| {
+                            e.path().to_str().map(|path| {
+                                dbg!(path);
+                                Self::read_from_file::<DefinitionDto>(&path.to_string(), &mut None)
+                            })
+                        })
+                        .transpose()
+                })
+            })?
+            .flatten()
+            .flatten()
+            .collect::<Result<Vec<DefinitionDto>, CharaError>>()
     }
 }
 impl ForeignDefinitions for Definitions {
@@ -150,14 +173,19 @@ impl ForeignDefinitions for Definitions {
 }
 
 pub fn create_path(name: &str, file_name: Option<&str>) -> Result<String, CharaError> {
-    let path = env::current_dir().map_err(CharaError::IO)?.join(name);
-    if !path.exists() {
-        fs::create_dir(&path).map_err(CharaError::IO)?;
-    }
-    let mut uniq_path = path.join(file_name.unwrap_or(&uuid::Uuid::new_v4().to_string()));
+    let mut uniq_path =
+        get_directory(name)?.join(file_name.unwrap_or(&uuid::Uuid::new_v4().to_string()));
     uniq_path.set_extension("json");
     uniq_path
         .to_str()
         .ok_or(CharaError::ParsePath)
         .map(|path| path.to_string())
+}
+
+fn get_directory(name: &str) -> Result<PathBuf, CharaError> {
+    let path = env::current_dir().map_err(CharaError::IO)?.join(name);
+    if !path.exists() {
+        fs::create_dir(&path).map_err(CharaError::IO)?;
+    }
+    Ok(path)
 }

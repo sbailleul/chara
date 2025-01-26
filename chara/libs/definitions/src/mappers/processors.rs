@@ -2,7 +2,7 @@ use engine::{
     definition::definition::Definition, processor::DraftProcessorOverride, reference_value::LazyRef,
 };
 
-use crate::definition::{ProcessorOverrideDto, ReferenceOrObjectDto};
+use crate::dto::definition::{ProcessorOverrideDto, ReferenceOrObjectDto};
 
 use super::{arguments::to_arguments, environments::to_environments, REFERENCE_PREFIX};
 

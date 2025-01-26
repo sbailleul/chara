@@ -19,7 +19,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use crate::{
-    definition::{DefinitionDto, ForeignDefinitionDto, ReferenceOrObjectDto},
+    dto::definition::{DefinitionDto, ForeignDefinitionDto, ReferenceOrObjectDto},
     mappers::{
         arguments::to_arguments,
         environments::to_environments,

@@ -16,7 +16,13 @@ export const definitionApi = createApi({
 				return response;
 			},
 		}),
+		getDefinitions: builder.query<Definition[], void>({
+			query: () => "definitions",
+			transformResponse: (responses: Definition[]) => {
+				return responses.map((def) => definitionSchema.parse(def));
+			},
+		}),
 	}),
 });
 
-export const { useGetDefinitionQuery } = definitionApi
+export const { useGetDefinitionQuery, useGetDefinitionsQuery } = definitionApi;

@@ -4,7 +4,7 @@ use engine::{
     reference_value::{LazyRefOrValue, ReferencedValue},
 };
 
-use crate::definition::EnvironmentDto;
+use crate::dto::definition::EnvironmentDto;
 
 pub fn from_environments(environments: Vec<DraftEnvironments>) -> Vec<EnvironmentDto> {
     environments
