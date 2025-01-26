@@ -121,17 +121,12 @@ pub struct InstallDto {
     pub current_directory: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(untagged)]
-pub enum EnvironmentDto {
-    Reference(String),
-    Value(HashMap<String, String>),
-}
+pub type EnvironmentDto = ReferenceOrObjectDto<HashMap<String, String>>;
 impl Hash for EnvironmentDto {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self {
             EnvironmentDto::Reference(_) => todo!(),
-            EnvironmentDto::Value(hash_map) => hash_map.iter().for_each(|(k, v)| {
+            EnvironmentDto::Object(hash_map) => hash_map.iter().for_each(|(k, v)| {
                 k.hash(state);
                 v.hash(state);
             }),
@@ -152,7 +147,7 @@ pub struct ProcessorDto {
 }
 #[derive(Debug, Deserialize, Serialize, Hash, Clone)]
 pub struct ProcessorOverrideDto {
-    pub reference: Option<String>,
+    pub r#ref: Option<String>,
     #[serde(default)]
     pub arguments: Vec<String>,
     #[serde(default)]

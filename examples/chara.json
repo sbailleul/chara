@@ -12,7 +12,7 @@
   "edges": {
     "workflows": {
       "definition": {
-        "reference": "#/http_client",
+        "ref": "#/http_client",
         "arguments": [
           "--url",
           "https://sbailleul.github.io/chara_public/definition.json"

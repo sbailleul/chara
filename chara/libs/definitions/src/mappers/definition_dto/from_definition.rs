@@ -51,7 +51,7 @@ impl DefinitionDto {
                     ReferenceOrObjectDto::Object(ProcessorOverrideDto {
                         arguments: from_arguments(processor.arguments.clone()),
                         environments: from_environments(processor.environments.clone()),
-                        reference: processor
+                        r#ref: processor
                             .processor
                             .as_ref()
                             .map(|processor| processor.reference()),
@@ -149,7 +149,7 @@ impl DefinitionDto {
                                 ProcessorOverrideDto {
                                     arguments: from_arguments(processor.arguments.clone()),
                                     environments: from_environments(processor.environments.clone()),
-                                    reference: processor
+                                    r#ref: processor
                                         .processor
                                         .as_ref()
                                         .map(|processor| processor.reference()),

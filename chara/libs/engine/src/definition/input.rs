@@ -8,6 +8,7 @@ use crate::processor::{DefinedProcessorOverride, DraftProcessorOverride};
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum BaseDefinitionInput<TProcessor> {
     File(String),
+    Id(String),
     Text(String),
     Value(Value),
     Processor(TProcessor),
@@ -29,6 +30,7 @@ impl DraftDefinitionInput {
     pub fn to_defined(&self) -> Option<DefinedDefinitionInput> {
         match self {
             BaseDefinitionInput::File(file) => Some(DefinedDefinitionInput::File(file.clone())),
+            BaseDefinitionInput::Id(id) => Some(DefinedDefinitionInput::Id(id.clone())),
             BaseDefinitionInput::Text(txt) => Some(DefinedDefinitionInput::Text(txt.clone())),
                 BaseDefinitionInput::Value(value) => Some(DefinedDefinitionInput::Value(value.clone())),
             BaseDefinitionInput::Processor(processor) => processor

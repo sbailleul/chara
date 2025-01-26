@@ -8,3 +8,4 @@ engine = { workspace = true }
 definitions = { workspace = true }
 
 rocket = { workspace = true , features = [ "json"]}
+rocket_cors = { workspace = true}

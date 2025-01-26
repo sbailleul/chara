@@ -37,27 +37,34 @@ impl Definitions {
     pub fn get_from_definition(definition: DefinitionDto) -> Result<Definition, CharaError> {
         Ok(definition.map())
     }
-    
+    fn read_from_file<T: for<'a> Deserialize<'a>>(
+        path: &String,
+        location: &mut Option<String>,
+    ) -> Result<T, CharaError> {
+        File::open(path).map_err(CharaError::IO).and_then(|file| {
+            let absolute_location =
+                canonicalize(path)
+                    .map_err(CharaError::IO)
+                    .and_then(|absolute_location| {
+                        absolute_location
+                            .to_str()
+                            .map(|absolute_location| absolute_location.to_string())
+                            .ok_or(CharaError::InvalidPath(path.clone()))
+                    })?;
+            *location = Some(absolute_location);
+            serde_json::from_reader(BufReader::new(file)).map_err(CharaError::Json)
+        })
+    }
 
     fn read_output<T: for<'a> Deserialize<'a>>(
         input: &DefinedDefinitionInput,
     ) -> Result<ReadOutput<T>, CharaError> {
         let mut location = None;
+        dbg!(input);
         match input {
-            BaseDefinitionInput::File(path) => {
-                File::open(path).map_err(CharaError::IO).and_then(|file| {
-                    let absolute_location = canonicalize(path).map_err(CharaError::IO).and_then(
-                        |absolute_location| {
-                            absolute_location
-                                .to_str()
-                                .map(|absolute_location| absolute_location.to_string())
-                                .ok_or(CharaError::InvalidPath(path.clone()))
-                        },
-                    )?;
-                    location = Some(absolute_location);
-                    serde_json::from_reader(BufReader::new(file)).map_err(CharaError::Json)
-                })
-            }
+            BaseDefinitionInput::Id(id) => Definitions::result_path(id.as_str())
+                .and_then(|path| Definitions::read_from_file(&path, &mut location)),
+            BaseDefinitionInput::File(path) => Definitions::read_from_file(path, &mut location),
             BaseDefinitionInput::Text(content) => {
                 serde_json::from_str(&content).map_err(CharaError::Json)
             }
@@ -73,6 +80,10 @@ impl Definitions {
         }
         .map(|output| ReadOutput { output, location })
     }
+
+    fn result_path(id: &str) -> Result<String, CharaError> {
+        create_path("chara_results", Some(id))
+    }
 }
 impl ForeignDefinitions for Definitions {
     fn get(&self, input: &DefinedDefinitionInput) -> Result<Definition, CharaError> {
@@ -82,7 +93,7 @@ impl ForeignDefinitions for Definitions {
     }
 
     fn save(&self, definition: &Definition) -> Result<(), CharaError> {
-        let path = create_path("chara_results", None)?;
+        let path = Definitions::result_path(definition.id.as_str())?;
         info!("Save result at {path}");
         serde_json::to_writer(
             File::create(path).map_err(CharaError::IO)?,

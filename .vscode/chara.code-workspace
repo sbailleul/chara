@@ -34,5 +34,8 @@
 			"name": "app",
 			"path": "../app"
 		}
-	]
+	],
+	"settings": {
+		"cSpell.words": ["chara"]
+	}
 }

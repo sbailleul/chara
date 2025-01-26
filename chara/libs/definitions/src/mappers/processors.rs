@@ -33,7 +33,7 @@ pub fn to_processor_override(
     processor_override: &ProcessorOverrideDto,
     definition: &Definition,
 ) -> DraftProcessorOverride {
-    if let Some(reference) = processor_override.reference.as_ref() {
+    if let Some(reference) = processor_override.r#ref.as_ref() {
         definition
             .processors
             .get(reference.trim_start_matches(REFERENCE_PREFIX))
