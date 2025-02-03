@@ -18,7 +18,10 @@ import { Route as rootRoute } from './routes/__root'
 
 const IndexLazyImport = createFileRoute('/')()
 const GraphIndexLazyImport = createFileRoute('/graph/')()
-const DefinitionIndexLazyImport = createFileRoute('/definition/')()
+const DefinitionsIndexLazyImport = createFileRoute('/definitions/')()
+const DefinitionsDefinitionIdIndexLazyImport = createFileRoute(
+  '/definitions/$definitionId/',
+)()
 
 // Create/Update Routes
 
@@ -34,13 +37,24 @@ const GraphIndexLazyRoute = GraphIndexLazyImport.update({
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/graph/index.lazy').then((d) => d.Route))
 
-const DefinitionIndexLazyRoute = DefinitionIndexLazyImport.update({
-  id: '/definition/',
-  path: '/definition/',
+const DefinitionsIndexLazyRoute = DefinitionsIndexLazyImport.update({
+  id: '/definitions/',
+  path: '/definitions/',
   getParentRoute: () => rootRoute,
 } as any).lazy(() =>
-  import('./routes/definition/index.lazy').then((d) => d.Route),
+  import('./routes/definitions/index.lazy').then((d) => d.Route),
 )
+
+const DefinitionsDefinitionIdIndexLazyRoute =
+  DefinitionsDefinitionIdIndexLazyImport.update({
+    id: '/definitions/$definitionId/',
+    path: '/definitions/$definitionId/',
+    getParentRoute: () => rootRoute,
+  } as any).lazy(() =>
+    import('./routes/definitions/$definitionId/index.lazy').then(
+      (d) => d.Route,
+    ),
+  )
 
 // Populate the FileRoutesByPath interface
 
@@ -53,11 +67,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexLazyImport
       parentRoute: typeof rootRoute
     }
-    '/definition/': {
-      id: '/definition/'
-      path: '/definition'
-      fullPath: '/definition'
-      preLoaderRoute: typeof DefinitionIndexLazyImport
+    '/definitions/': {
+      id: '/definitions/'
+      path: '/definitions'
+      fullPath: '/definitions'
+      preLoaderRoute: typeof DefinitionsIndexLazyImport
       parentRoute: typeof rootRoute
     }
     '/graph/': {
@@ -67,6 +81,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GraphIndexLazyImport
       parentRoute: typeof rootRoute
     }
+    '/definitions/$definitionId/': {
+      id: '/definitions/$definitionId/'
+      path: '/definitions/$definitionId'
+      fullPath: '/definitions/$definitionId'
+      preLoaderRoute: typeof DefinitionsDefinitionIdIndexLazyImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -74,42 +95,52 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexLazyRoute
-  '/definition': typeof DefinitionIndexLazyRoute
+  '/definitions': typeof DefinitionsIndexLazyRoute
   '/graph': typeof GraphIndexLazyRoute
+  '/definitions/$definitionId': typeof DefinitionsDefinitionIdIndexLazyRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexLazyRoute
-  '/definition': typeof DefinitionIndexLazyRoute
+  '/definitions': typeof DefinitionsIndexLazyRoute
   '/graph': typeof GraphIndexLazyRoute
+  '/definitions/$definitionId': typeof DefinitionsDefinitionIdIndexLazyRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexLazyRoute
-  '/definition/': typeof DefinitionIndexLazyRoute
+  '/definitions/': typeof DefinitionsIndexLazyRoute
   '/graph/': typeof GraphIndexLazyRoute
+  '/definitions/$definitionId/': typeof DefinitionsDefinitionIdIndexLazyRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/definition' | '/graph'
+  fullPaths: '/' | '/definitions' | '/graph' | '/definitions/$definitionId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/definition' | '/graph'
-  id: '__root__' | '/' | '/definition/' | '/graph/'
+  to: '/' | '/definitions' | '/graph' | '/definitions/$definitionId'
+  id:
+    | '__root__'
+    | '/'
+    | '/definitions/'
+    | '/graph/'
+    | '/definitions/$definitionId/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexLazyRoute: typeof IndexLazyRoute
-  DefinitionIndexLazyRoute: typeof DefinitionIndexLazyRoute
+  DefinitionsIndexLazyRoute: typeof DefinitionsIndexLazyRoute
   GraphIndexLazyRoute: typeof GraphIndexLazyRoute
+  DefinitionsDefinitionIdIndexLazyRoute: typeof DefinitionsDefinitionIdIndexLazyRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
-  DefinitionIndexLazyRoute: DefinitionIndexLazyRoute,
+  DefinitionsIndexLazyRoute: DefinitionsIndexLazyRoute,
   GraphIndexLazyRoute: GraphIndexLazyRoute,
+  DefinitionsDefinitionIdIndexLazyRoute: DefinitionsDefinitionIdIndexLazyRoute,
 }
 
 export const routeTree = rootRoute
@@ -123,18 +154,22 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/definition/",
-        "/graph/"
+        "/definitions/",
+        "/graph/",
+        "/definitions/$definitionId/"
       ]
     },
     "/": {
       "filePath": "index.lazy.tsx"
     },
-    "/definition/": {
-      "filePath": "definition/index.lazy.tsx"
+    "/definitions/": {
+      "filePath": "definitions/index.lazy.tsx"
     },
     "/graph/": {
       "filePath": "graph/index.lazy.tsx"
+    },
+    "/definitions/$definitionId/": {
+      "filePath": "definitions/$definitionId/index.lazy.tsx"
     }
   }
 }

@@ -167,7 +167,6 @@ type ButtonProps = (
 		| Omit<Headless.ButtonProps, "as" | "className">
 		| Omit<React.ComponentPropsWithoutRef<typeof Link>, "className">
 	);
-
 export const Button = forwardRef(function Button(
 	{ color, outline, plain, className, children, ...props }: ButtonProps,
 	ref: React.ForwardedRef<HTMLElement>,
@@ -182,7 +181,7 @@ export const Button = forwardRef(function Button(
 				: clsx(styles.solid, styles.colors[color ?? "dark/zinc"]),
 	);
 
-	return "href" in props ? (
+	return "to" in props || "href" in props ? (
 		<Link
 			{...props}
 			className={classes}

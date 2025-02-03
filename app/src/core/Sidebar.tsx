@@ -19,7 +19,7 @@ export function AppSidebar() {
 				<SidebarSection>
 					<SidebarItem to=".">Home</SidebarItem>
 					<SidebarItem to="/graph">Graph</SidebarItem>
-					<SidebarItem to="/definition">Definition</SidebarItem>
+					<SidebarItem to="/definitions">Definitions</SidebarItem>
 				</SidebarSection>
 			</SidebarBody>
 		</Sidebar>

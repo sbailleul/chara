@@ -1,8 +1,6 @@
-import {
-	foreignDefinitionSchema,
-	type ForeignDefinition,
-} from "@/routes/definition/-feature/store/types/foreignDefinition";
-import { referenceOrProcessorOverrideSchema } from "@/routes/definition/-feature/store/types/processor";
+
+import { type ForeignDefinition, foreignDefinitionSchema } from "@/routes/definitions/$definitionId/-feature/store/types/foreign-definition";
+import { referenceOrProcessorOverrideSchema } from "@/routes/definitions/$definitionId/-feature/store/types/processor";
 import { z } from "zod";
 
 const baseEdgeSchema = z.object({

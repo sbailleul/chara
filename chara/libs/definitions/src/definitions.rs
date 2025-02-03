@@ -21,7 +21,7 @@ use crate::{
     cli::Cli,
     dto::{
         definition::{DefinitionDto, ProcessorResultDto},
-        definition_info::DefinitionInfo,
+        definition_info::DefinitionSummaryDto,
     },
 };
 
@@ -88,7 +88,7 @@ impl Definitions {
     fn result_path(id: &str) -> Result<String, CharaError> {
         create_path("chara_results", Some(id))
     }
-    pub fn all_definitions() -> Result<Vec<DefinitionDto>, CharaError> {
+    pub fn all_definitions() -> Result<Vec<DefinitionSummaryDto>, CharaError> {
         read_dir(get_directory("chara_results")?)
             .map_err(CharaError::IO)
             .map(|res| {
@@ -97,7 +97,7 @@ impl Definitions {
                         .map(|e| {
                             e.path().to_str().map(|path| {
                                 dbg!(path);
-                                Self::read_from_file::<DefinitionDto>(&path.to_string(), &mut None)
+                                Self::read_from_file::<DefinitionSummaryDto>(&path.to_string(), &mut None)
                             })
                         })
                         .transpose()
@@ -105,7 +105,7 @@ impl Definitions {
             })?
             .flatten()
             .flatten()
-            .collect::<Result<Vec<DefinitionDto>, CharaError>>()
+            .collect::<Result<Vec<DefinitionSummaryDto>, CharaError>>()
     }
 }
 impl ForeignDefinitions for Definitions {

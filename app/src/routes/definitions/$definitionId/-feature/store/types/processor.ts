@@ -1,6 +1,7 @@
-import { environmentSchema } from "@/routes/definition/-feature/store/types/environment";
-import { installSchema } from "@/routes/definition/-feature/store/types/install";
-import { referenceOrObjectSchema } from "@/routes/definition/-feature/store/types/utils";
+
+import { environmentSchema } from "@/routes/definitions/$definitionId/-feature/store/types/environment";
+import { installSchema } from "@/routes/definitions/$definitionId/-feature/store/types/install";
+import { referenceOrObjectSchema } from "@/routes/definitions/$definitionId/-feature/store/types/utils";
 import { z } from "zod";
 
 export const processorOverrideSchema = z.object({

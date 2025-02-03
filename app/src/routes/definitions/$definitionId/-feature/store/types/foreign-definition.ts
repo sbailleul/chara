@@ -1,8 +1,6 @@
-import { processorOverrideSchema } from "@/routes/definition/-feature/store/types/processor";
-import {
-	baseDefinitionSchema,
-	type Definition,
-} from "@/routes/definition/-feature/store/types/types";
+
+import { baseDefinitionSchema } from "@/routes/definitions/$definitionId/-feature/store/types/definition";
+import { processorOverrideSchema } from "@/routes/definitions/$definitionId/-feature/store/types/processor";
 import { z } from "zod";
 
 export const foreignDefinitionSchema = z

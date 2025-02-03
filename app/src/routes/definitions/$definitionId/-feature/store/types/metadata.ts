@@ -1,18 +1,8 @@
-import {
-	type Edge,
-	edgeSchema,
-} from "@/routes/definition/-feature/store/types/edge";
-import { environmentSchema } from "@/routes/definition/-feature/store/types/environment";
-import {
-	processorSchema,
-	referenceOrProcessorOverrideSchema,
-} from "@/routes/definition/-feature/store/types/processor";
-import { tagSchema } from "@/routes/definition/-feature/store/types/tag";
-import {
-	type Definition,
-	definitionSchema,
-} from "@/routes/definition/-feature/store/types/types";
-import { referenceOrObjectSchema } from "@/routes/definition/-feature/store/types/utils";
+
+import { type Definition, definitionSchema } from "@/routes/definitions/$definitionId/-feature/store/types/definition";
+import { environmentSchema } from "@/routes/definitions/$definitionId/-feature/store/types/environment";
+import { referenceOrProcessorOverrideSchema } from "@/routes/definitions/$definitionId/-feature/store/types/processor";
+import { referenceOrObjectSchema } from "@/routes/definitions/$definitionId/-feature/store/types/utils";
 import { type ZodType, z } from "zod";
 
 const baseMetadataEdgeSchema = z.object({

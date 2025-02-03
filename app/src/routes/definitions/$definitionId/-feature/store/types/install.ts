@@ -1,4 +1,4 @@
-import { environmentSchema } from "@/routes/definition/-feature/store/types/environment";
+import { environmentSchema } from "@/routes/definitions/$definitionId/-feature/store/types/environment";
 import { z } from "zod";
 
 export const installSchema = z.object({

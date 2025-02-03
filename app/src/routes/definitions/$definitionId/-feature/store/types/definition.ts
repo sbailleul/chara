@@ -1,14 +1,15 @@
 import {
 	type Edge,
 	edgeSchema,
-} from "@/routes/definition/-feature/store/types/edge";
-import { metadataSchema } from "@/routes/definition/-feature/store/types/metadata";
-import { processorSchema } from "@/routes/definition/-feature/store/types/processor";
-import { tagSchema } from "@/routes/definition/-feature/store/types/tag";
+} from "@/routes/definitions/$definitionId/-feature/store/types/edge";
+import { metadataSchema } from "@/routes/definitions/$definitionId/-feature/store/types/metadata";
+import { processorSchema } from "@/routes/definitions/$definitionId/-feature/store/types/processor";
+import { tagSchema } from "@/routes/definitions/$definitionId/-feature/store/types/tag";
 import { type ZodType, z } from "zod";
 
 export const baseDefinitionSchema = z.object({
 	id: z.string().uuid(),
+	name: z.string(),
 	location: z.string().nullable(),
 	metadata: z.record(z.string(), metadataSchema),
 	tags: z.record(z.string(), tagSchema),
@@ -26,4 +27,3 @@ export const definitionSchema: ZodType<Definition> =
 		edges: z.lazy(() => z.record(z.string(), edgeSchema)),
 	});
 
-const toto: Partial<Definition> = { arguments: { toto: [""] } };

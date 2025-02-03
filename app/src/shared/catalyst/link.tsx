@@ -7,21 +7,25 @@
  */
 
 import * as Headless from "@headlessui/react";
-import type React from "react";
-import { forwardRef } from "react";
+import {
+	type ComponentProps,
+	type ComponentPropsWithoutRef,
+	type ForwardedRef,
+	forwardRef,
+} from "react";
 import {
 	Link as TanstackLink,
 	type LinkComponentProps,
 } from "@tanstack/react-router";
 export const Link = forwardRef(function Link(
-	props: { href: string } & React.ComponentPropsWithoutRef<"a"> &
+	props: { href: string } & ComponentPropsWithoutRef<"a"> &
 		LinkComponentProps<"a">,
-	ref: React.ForwardedRef<HTMLAnchorElement>,
+	ref: ForwardedRef<HTMLAnchorElement>,
 ) {
-	console.log("T");
 	return (
 		<Headless.DataInteractive>
 			<TanstackLink {...props} ref={ref} />
 		</Headless.DataInteractive>
 	);
 });
+export type LinkProps = ComponentProps<typeof Link>;
